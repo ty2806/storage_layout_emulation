@@ -41,6 +41,35 @@ namespace awesome {
 
   };
 
+  class Page {
+    public: 
+    vector <pair < pair < long, long> , string>> kv_vector;
+    static struct vector<Page> createNewPages(int page_count);
+  };
+
+
+  class DeleteTile {
+  
+  public: 
+  //int tile_level;
+  //string tile_id;
+  vector < Page > page_vector;
+  static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size);
+
+  };
+
+  class TestFile {
+  
+  public: 
+  int file_level;
+  string file_id;
+  vector < DeleteTile > tile_vector;
+  static struct TestFile createNewTestFile(int level_to_flush_in);
+
+  }; 
+
+
+
   class SSTFile {
 
   public: 
@@ -62,6 +91,10 @@ namespace awesome {
 
     public:
     //static SSTFile* head_level_1;
+
+    static int setTestFileHead(TestFile arg, int level);
+    static int getTestFileHead(TestFile arg, int level);
+
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
     static int setMetaStatistics(int level);
@@ -71,6 +104,10 @@ namespace awesome {
     static int printFileEntries();
 
     static SSTFile* level_head[32];
+
+    static vector <TestFile> test_file_head;
+
+
     static long level_min_key[32];
     static long level_max_key[32];
     static long level_file_count[32];

@@ -659,6 +659,51 @@ SSTFile* SSTFile::createNewSSTFile(int level_to_flush_in) {
   return new_file;
 }
 
+vector<Page> Page::createNewPages(int page_count){
+  EmuEnv* _env = EmuEnv::getInstance();
+  vector <Page> pages (page_count);
+  for(int i=0;i<pages.size();i++)
+  {
+    vector <pair < pair < long, long> , string>> kv_vect;
+
+    pages[i].kv_vector = kv_vect;
+  }
+
+  //new_delete_tile.page_vector =  
+  return pages;
+}
+
+
+
+vector<DeleteTile> DeleteTile::createNewDeleteTiles(int delete_tile_size) {
+  EmuEnv* _env = EmuEnv::getInstance();
+  vector <DeleteTile> delete_tiles (delete_tile_size);
+  for(int i=0;i<delete_tiles.size();i++)
+  {
+    delete_tiles[i].page_vector = Page::createNewPages(_env->buffer_size_in_pages);
+  }
+
+  //new_delete_tile.page_vector =  
+  return delete_tiles;
+}
+
+TestFile TestFile::createNewTestFile(int level_to_flush_in) {
+  TestFile new_file;
+  new_file.file_level = level_to_flush_in;
+  //new_file->file_instance.push_back(make_pair(" "," "));
+  //new_file->next_file_ptr = NULL;
+  DiskMetaFile::global_level_file_counter[level_to_flush_in]++;
+  new_file.file_id = "L" + std::to_string(level_to_flush_in) + "F" + std::to_string(DiskMetaFile::global_level_file_counter[level_to_flush_in]);
+  EmuEnv* _env = EmuEnv::getInstance();
+
+  new_file.tile_vector = DeleteTile::createNewDeleteTiles(_env->delete_tile_size);
+  //std::cout << "Creating new file !!" << std::endl;
+
+  return new_file;
+
+}
+
+
 int DiskMetaFile::setSSTFileHead(SSTFile* arg, int level_to_flush_in) {
   // std::cout << "Printing 2 :: " << arg->file_id  << std::endl ;
   DiskMetaFile::level_head[level_to_flush_in-1] = arg;
