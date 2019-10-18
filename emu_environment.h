@@ -5,7 +5,7 @@
 
 #ifndef EMU_ENVIRONMENT_H_
 #define EMU_ENVIRONMENT_H_
-
+ 
 
 #include <iostream>
 
@@ -28,7 +28,7 @@ public:
   int entry_size; // E
   long buffer_size; // M = P*B*E ; in Bytes
 
-  int delete_tile_size; // h
+  int delete_tile_size_in_pages; // h
   long file_size; // B/s ; in Bytes
 
   float buffer_flush_threshold;

@@ -2,7 +2,7 @@
  *  Created on: May 14, 2019
  *  Author: Subhadeep
  */
-
+ 
 #ifndef AWESOME_H_
 #define AWESOME_H_
 
@@ -28,7 +28,7 @@ namespace awesome {
     static long current_buffer_size;
     static float current_buffer_saturation;
     static int buffer_flush_count;
-    static vector < pair <long, string> > buffer;
+    static vector < pair < pair <long, long>, string> > buffer;
     static int verbosity;
 
     static MemoryBuffer* getBufferInstance(EmuEnv* _env);
@@ -40,6 +40,8 @@ namespace awesome {
 
 
   };
+
+  //MTIP
 
   class Page {
     public: 
@@ -54,7 +56,7 @@ namespace awesome {
   //int tile_level;
   //string tile_id;
   vector < Page > page_vector;
-  static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size);
+  static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size_in_pages);
 
   };
 
@@ -92,8 +94,10 @@ namespace awesome {
     public:
     //static SSTFile* head_level_1;
 
+    //MTIP
+    static vector < vector <TestFile>> test_files;
     static int setTestFileHead(TestFile arg, int level);
-    static int getTestFileHead(TestFile arg, int level);
+    static TestFile getTestFileHead(TestFile arg, int level);
 
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
@@ -104,9 +108,6 @@ namespace awesome {
     static int printFileEntries();
 
     static SSTFile* level_head[32];
-
-    static vector <TestFile> test_file_head;
-
 
     static long level_min_key[32];
     static long level_max_key[32];
@@ -138,7 +139,7 @@ namespace awesome {
     static long buffer_update_count;
     static long buffer_insert_count;
 
-    static int insert(long key, string value);
+    static int insert(long sortkey, long deletekey, string value);
     static int pointGet(long key);
     static int search(long key, int possible_level_of_occurrence);
     static int getWorkloadStatictics(EmuEnv* _env);

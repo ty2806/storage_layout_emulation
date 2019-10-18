@@ -2,7 +2,7 @@
  *  Created on: May 14, 2019
  *  Author: Subhadeep
  */
-
+ 
 #include <iostream>
 #include <cmath>
 #include <sys/time.h>
@@ -27,7 +27,10 @@ long MemoryBuffer::current_buffer_size = 0;
 float MemoryBuffer::current_buffer_saturation = 0;
 //int MemoryBuffer::buffer_split_factor = 0;
 int MemoryBuffer::buffer_flush_count = 0;
-vector <pair<long, string>> MemoryBuffer::buffer(1, make_pair(0," ") );
+//MTIP
+vector < pair < pair < long, long > , string > > MemoryBuffer::buffer;
+vector <vector <TestFile>> DiskMetaFile::test_files;
+
 int MemoryBuffer::verbosity = 0;
 
 long WorkloadExecutor::buffer_insert_count = 0; 
@@ -51,12 +54,130 @@ int DiskMetaFile::compaction_through_sortmerge_counter[32] = { };
 int DiskMetaFile::compaction_through_point_manipulation_counter[32] = { };
 int DiskMetaFile::compaction_file_counter[32] = { };
 
+bool sortbysortkey(const pair < pair < long, long > , string > &a, const pair < pair < long, long > , string > &b);
+bool sortbydeletekey(const pair < pair < long, long > , string > &a, const pair < pair < long, long > , string > &b);
+int sortAndWrite(vector < pair < pair < long, long > , string > > file_to_sort, int level_to_flush_in);
+
+//This is used to sort the whole file based on sortkey
+bool sortbysortkey(const pair < pair < long, long > , string > &a, const pair < pair < long, long > , string > &b) { 
+    return (a.first.first < b.first.first); 
+}
+
+bool sortbydeletekey(const pair < pair < long, long > , string > &a, const pair < pair < long, long > , string > &b) { 
+    return (a.first.second < b.first.second); 
+}
+
+int PrintAllEntries() {
+  std::cout<<"*******PRINT ALL****************"<<std::endl;
+  //std::cout<<DiskMetaFile::test_files.size()<<std::endl;
+  //std::cout<<DiskMetaFile::test_files[0].size()<<std::endl;
+
+  for(int i = 0; i < DiskMetaFile::test_files.size(); i++) {
+    cout<<"Test Files Size: "<<DiskMetaFile::test_files.size()<<endl;
+    for(int j = 0; j < DiskMetaFile::test_files[i].size(); j++) {
+      TestFile testfile = DiskMetaFile::test_files[i][j];
+      for(int k = 0; k < testfile.tile_vector.size(); k++) {
+        DeleteTile deletefile = testfile.tile_vector[k];
+        for (int l = 0; l < deletefile.page_vector.size(); l++) {
+          for (int m = 0; m < deletefile.page_vector[l].kv_vector.size(); l++) {
+            std::cout<< "Level : "<< i << "\tFile: "<< j <<"\tDelete tile : "<< k <<"\tPage : " 
+            << l << "\tSort Key: " << deletefile.page_vector[l].kv_vector[m].first.first 
+            <<"\tDelete Key" << deletefile.page_vector[l].kv_vector[m].first.second <<"\tValue" 
+            << deletefile.page_vector[l].kv_vector[m].second << std::endl;
+          }
+        }
+      }
+    }
+  }
+}
+
+int PopulateDeleteTile(TestFile arg, vector <pair < pair < long, long> , string>> temp_vector, int deletetileid, int level_to_flush_in){
+  EmuEnv* _env = EmuEnv::getInstance();
+  
+  for(int i = 0; i < _env->delete_tile_size_in_pages; i++) {
+      vector <pair < pair < long, long> , string>> temp_vector2;
+      for(int j=0; j < _env->entries_per_page; ++j) {
+        temp_vector2.push_back(temp_vector[j]);
+      }
+      std::sort(temp_vector2.begin(), temp_vector2.end(), sortbysortkey);
+      temp_vector.erase (temp_vector.begin(),temp_vector.begin() + _env->entries_per_page);
+      //int status = PopulatePage(arg, temp_vector2);
+      arg.tile_vector[deletetileid].page_vector[i].kv_vector.push_back(make_pair( make_pair (
+        temp_vector2[i].first.first , temp_vector2[i].first.second ) , temp_vector2[i].second ));
+
+      cout<<temp_vector2[i].first.first<< " "<<temp_vector2[i].first.second<<endl;
+      DiskMetaFile::test_files[level_to_flush_in].push_back(arg);
+      temp_vector2.clear();   
+  }
+  
+
+  // if(DiskMetaFile::test_files.size()==0) {
+  //   DiskMetaFile::test_files[0].push_back(arg);
+  // }
+  // else {
+  //   DiskMetaFile::test_files[level_to_flush_in].push_back(arg);
+  // }
+  
+  return 1;
+}
+
+int PopulateFile(TestFile arg, vector <pair < pair < long, long> , string>> temp_vector, int level_to_flush_in){
+  EmuEnv* _env = EmuEnv::getInstance();
+  int delete_tile_count = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
+  //cout<<"Vector Size: "<<temp_vector.size()<<std::endl;
+  //cout<<"Delete tile count: "<<delete_tile_count<<std::endl;
+  //vector <DeleteTile> temp_delete_tiles;
+
+  for(int i=0; i < delete_tile_count; i++) {
+      vector <pair < pair < long, long> , string>> temp_vector2;
+      for(int j=0; j < _env->delete_tile_size_in_pages * _env->entries_per_page; ++j) {
+        temp_vector2.push_back(temp_vector[j]);
+      }
+      std::sort(temp_vector2.begin(), temp_vector2.end(), sortbydeletekey);
+      temp_vector.erase (temp_vector.begin(),temp_vector.begin() + _env->delete_tile_size_in_pages * _env->entries_per_page);
+      int status = PopulateDeleteTile(arg, temp_vector2, i, level_to_flush_in);
+      temp_vector2.clear();
+  }
+  return 1;
+}
+
+int sortAndWrite(vector < pair < pair < long, long > , string > > file_to_sort, int level_to_flush_in) {
+
+  
+  std::sort(file_to_sort.begin(),file_to_sort.end(), sortbysortkey);
+  EmuEnv* _env = EmuEnv::getInstance();
+  int entries_per_file = _env->entries_per_page*_env->buffer_size_in_pages;
+
+  if(file_to_sort.size() % _env->delete_tile_size_in_pages != 0 && file_to_sort.size() / _env->delete_tile_size_in_pages < 1) {
+    std::cout<< " ERROR " << std::endl; exit(1);
+  }
+  else {
+    int file_count = file_to_sort.size();
+    vector <TestFile> temp_test_files;
+    for(int i=0; i < file_count; i++) {
+      temp_test_files.push_back(TestFile::createNewTestFile(level_to_flush_in));  
+      //cout << temp_test_files[i].file_id << endl;
+      
+      vector <pair < pair < long, long> , string>> temp_vector;
+      for(int j=0; j < entries_per_file; ++j) {
+        temp_vector.push_back(file_to_sort[j]);
+      }
+
+      file_to_sort.erase (file_to_sort.begin(),file_to_sort.begin() + entries_per_file);      
+      int status = PopulateFile(temp_test_files[i], temp_vector,level_to_flush_in);
+      temp_vector.clear();
+    }
+    int status = PrintAllEntries();
+    //exit(1);
+  }
+}
+
 // CLASS : MemoryBuffer
 
 MemoryBuffer::MemoryBuffer(EmuEnv *_env) {
   max_buffer_size = _env->buffer_size;
   buffer_flush_threshold = _env->buffer_flush_threshold;
-  //delete_tile_size = _env->delete_tile_size;
+  //delete_tile_size_in_pages = _env->delete_tile_size_in_pages;
   verbosity = _env->verbosity;
 
   for(int i=0; i<32; ++i) {
@@ -92,129 +213,139 @@ int MemoryBuffer::getCurrentBufferStatistics(){
 }
 
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in) { //we can replace level_to_flush_in by 0
-
-  // if(MemoryBuffer::buffer_flush_count == 0) {
-  if(DiskMetaFile::level_head[0] == NULL) {
-    //int entries_per_file = MemoryBuffer::current_buffer_entry_count / MemoryBuffer::buffer_split_factor;
-    int entries_per_file = MemoryBuffer::current_buffer_entry_count;
-
-    SSTFile* head_level_1 = SSTFile::createNewSSTFile(level_to_flush_in);
-
-    SSTFile* current_file = head_level_1;
-    for (int i=0; i < MemoryBuffer::buffer.size(); ) {  
-      do {
-        current_file->file_instance.push_back( make_pair( MemoryBuffer::buffer[i].first, MemoryBuffer::buffer[i].second ) );
-        ++i;
-        //std::cout << i << " : " << MemoryBuffer::buffer[i].first << " ::\t";
-      } while( i % entries_per_file != 0 );
-
-      //std::cout << "i = " << i << " :: creating new SST File " << std::endl;
-      if( i != MemoryBuffer::buffer.size() ) {
-        SSTFile* new_SSTfile = SSTFile::createNewSSTFile(level_to_flush_in);
-        current_file->next_file_ptr = new_SSTfile;
-        current_file = new_SSTfile;
-      }
-    }
-    MemoryBuffer::buffer_flush_count++;
-    DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
-    DiskMetaFile::setMetaStatistics(level_to_flush_in);
-
-    // Printing file contents
-    // SSTFile* current_file_to_print = head_level_1;
-    // while( current_file_to_print != NULL ) {
-    //   std::cout << "Printing file " << current_file_to_print->file_id << std::endl;
-    //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
-    //     std::cout << current_file_to_print->file_instance[i].first << "\t";
-    //   }
-    //   std::cout << std::endl;
-    //   current_file_to_print = current_file_to_print->next_file_ptr; 
-    // }
+  //std::cout << "Buffer full :: Sorting buffer " ;
+  if(DiskMetaFile::test_files.size()==0) {
+    //std::cout<<"File Count: "<<MemoryBuffer::buffer.size()<<std::endl;
+    DiskMetaFile::test_files.resize(32);
+    sortAndWrite (MemoryBuffer::buffer,level_to_flush_in);
+    //std::cout << " Bla  bal " << std::endl;
   }
 
-  else {
-    SSTFile* old_head_L1_reference = DiskMetaFile::getSSTFileHead(level_to_flush_in);
-    vector < pair < long, string > > temp_vector;
-    vector <long> duplicate_key_search_space;
 
-    for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
-      temp_vector.push_back( make_pair( MemoryBuffer::buffer[i].first, MemoryBuffer::buffer[i].second ) );
-      duplicate_key_search_space.push_back(MemoryBuffer::buffer[i].first);
-    }
+  // if(DiskMetaFile::test_file_head[0] == NULL) {
+  //   //int entries_per_file = MemoryBuffer::current_buffer_entry_count / MemoryBuffer::buffer_split_factor;
+  //   int entries_per_file = MemoryBuffer::current_buffer_entry_count;
 
-    // std::cout << "Content of duplicate_key_search_space : " << std::endl;
-    // for(int i=0; i < duplicate_key_search_space.size(); ++i) {
-    //   std::cout << duplicate_key_search_space[i] << "\t";
-    // }
-    // std::cout << std::endl;
+  //   TestFile head_level_1 = TestFile::createNewTestFile(level_to_flush_in);
+  //   TestFile current_file = head_level_1;
+
+  //   //SSTFile* head_level_1 = SSTFile::createNewSSTFile(level_to_flush_in);
+  //   //SSTFile* current_file = head_level_1;
+
+  //   for (int i=0; i < MemoryBuffer::buffer.size(); ) {  
+  //     do {
+  //       current_file->file_instance.push_back( make_pair( MemoryBuffer::buffer[i].first, MemoryBuffer::buffer[i].second ) );
+  //       ++i;
+  //       //std::cout << i << " : " << MemoryBuffer::buffer[i].first << " ::\t";
+  //     } while( i % entries_per_file != 0 );
+
+  //     //std::cout << "i = " << i << " :: creating new SST File " << std::endl;
+  //     if( i != MemoryBuffer::buffer.size() ) {
+  //       SSTFile* new_SSTfile = SSTFile::createNewSSTFile(level_to_flush_in);
+  //       current_file->next_file_ptr = new_SSTfile;
+  //       current_file = new_SSTfile;
+  //     }
+  //   }
+  //   MemoryBuffer::buffer_flush_count++;
+  //   DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
+  //   DiskMetaFile::setMetaStatistics(level_to_flush_in);
+
+  //   // Printing file contents
+  //   // SSTFile* current_file_to_print = head_level_1;
+  //   // while( current_file_to_print != NULL ) {
+  //   //   std::cout << "Printing file " << current_file_to_print->file_id << std::endl;
+  //   //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
+  //   //     std::cout << current_file_to_print->file_instance[i].first << "\t";
+  //   //   }
+  //   //   std::cout << std::endl;
+  //   //   current_file_to_print = current_file_to_print->next_file_ptr; 
+  //   // }
+  // }
+
+  // else {
+  //   SSTFile* old_head_L1_reference = DiskMetaFile::getSSTFileHead(level_to_flush_in);
+  //   vector < pair < long, string > > temp_vector;
+  //   vector <long> duplicate_key_search_space;
+
+  //   for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
+  //     temp_vector.push_back( make_pair( MemoryBuffer::buffer[i].first, MemoryBuffer::buffer[i].second ) );
+  //     duplicate_key_search_space.push_back(MemoryBuffer::buffer[i].first);
+  //   }
+
+  //   // std::cout << "Content of duplicate_key_search_space : " << std::endl;
+  //   // for(int i=0; i < duplicate_key_search_space.size(); ++i) {
+  //   //   std::cout << duplicate_key_search_space[i] << "\t";
+  //   // }
+  //   // std::cout << std::endl;
     
-    while(old_head_L1_reference != NULL) {
-      for(int i=0; i < old_head_L1_reference->file_instance.size(); ++i) {
-        long key = old_head_L1_reference->file_instance[i].first;
-        if(!std::binary_search(duplicate_key_search_space.begin(), duplicate_key_search_space.end(), key)) {
-          temp_vector.push_back( make_pair( old_head_L1_reference->file_instance[i].first, old_head_L1_reference->file_instance[i].second ) );
-          // std::cout << "found " << key << "\n";
-        }
-      }
-      old_head_L1_reference = old_head_L1_reference->next_file_ptr;
-    }
+  //   while(old_head_L1_reference != NULL) {
+  //     for(int i=0; i < old_head_L1_reference->file_instance.size(); ++i) {
+  //       long key = old_head_L1_reference->file_instance[i].first;
+  //       if(!std::binary_search(duplicate_key_search_space.begin(), duplicate_key_search_space.end(), key)) {
+  //         temp_vector.push_back( make_pair( old_head_L1_reference->file_instance[i].first, old_head_L1_reference->file_instance[i].second ) );
+  //         // std::cout << "found " << key << "\n";
+  //       }
+  //     }
+  //     old_head_L1_reference = old_head_L1_reference->next_file_ptr;
+  //   }
 
-    std::sort(temp_vector.begin(), temp_vector.end());
+  //   std::sort(temp_vector.begin(), temp_vector.end());
 
-    // // Printing
-    // std::cout << "Printing sorted entries before spliting and flushing: " << std::endl;
-    // for(int i=0; i < temp_vector.size(); ++i) {
-    //   std::cout << temp_vector[i].first << "\t";
-    // }
-    // std::cout << std::endl;
+  //   // // Printing
+  //   // std::cout << "Printing sorted entries before spliting and flushing: " << std::endl;
+  //   // for(int i=0; i < temp_vector.size(); ++i) {
+  //   //   std::cout << temp_vector[i].first << "\t";
+  //   // }
+  //   // std::cout << std::endl;
     
-    // New content
-    //int entries_per_file = MemoryBuffer::current_buffer_entry_count / MemoryBuffer::buffer_split_factor;
-    int entries_per_file = MemoryBuffer::current_buffer_entry_count;
+  //   // New content
+  //   //int entries_per_file = MemoryBuffer::current_buffer_entry_count / MemoryBuffer::buffer_split_factor;
+  //   int entries_per_file = MemoryBuffer::current_buffer_entry_count;
 
-    SSTFile* head_level_1 = SSTFile::createNewSSTFile(level_to_flush_in);
-    // std::cout << "Printing 1 :: " << head_level_1->file_id  << std::endl;
+  //   SSTFile* head_level_1 = SSTFile::createNewSSTFile(level_to_flush_in);
+  //   // std::cout << "Printing 1 :: " << head_level_1->file_id  << std::endl;
 
-    SSTFile* current_file = head_level_1;
-    for (int i=0; i < temp_vector.size(); ) {  
-      do {
-        current_file->file_instance.push_back( make_pair( temp_vector[i].first, temp_vector[i].second ) );
-        ++i;
-        //std::cout << i << " : " << temp_vector[i].first << " ::\t";
-      } while( i % entries_per_file != 0 && i < temp_vector.size() );
+  //   SSTFile* current_file = head_level_1;
+  //   for (int i=0; i < temp_vector.size(); ) {  
+  //     do {
+  //       current_file->file_instance.push_back( make_pair( temp_vector[i].first, temp_vector[i].second ) );
+  //       ++i;
+  //       //std::cout << i << " : " << temp_vector[i].first << " ::\t";
+  //     } while( i % entries_per_file != 0 && i < temp_vector.size() );
 
-      //std::cout << "i = " << i << " :: creating new SST File " << std::endl;
-      if( i != temp_vector.size() ) {
-        SSTFile* new_SSTfile = SSTFile::createNewSSTFile(level_to_flush_in);
-        current_file->next_file_ptr = new_SSTfile;
-        current_file = new_SSTfile;
-      }
-    }
+  //     //std::cout << "i = " << i << " :: creating new SST File " << std::endl;
+  //     if( i != temp_vector.size() ) {
+  //       SSTFile* new_SSTfile = SSTFile::createNewSSTFile(level_to_flush_in);
+  //       current_file->next_file_ptr = new_SSTfile;
+  //       current_file = new_SSTfile;
+  //     }
+  //   }
 
-    MemoryBuffer::buffer_flush_count++;
-    DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
-    DiskMetaFile::setMetaStatistics(level_to_flush_in);
+  //   MemoryBuffer::buffer_flush_count++;
+  //   DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
+  //   DiskMetaFile::setMetaStatistics(level_to_flush_in);
     
-    // Printing file contents
-    // SSTFile* current_file_to_print = head_level_1;
-    // while( current_file_to_print != NULL ) {
-    //   std::cout << "Printing file " << current_file_to_print->file_id << ": ";
-    //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
-    //     std::cout << current_file_to_print->file_instance[i].first << "\t";
-    //   }
-    //   std::cout << std::endl;
-    //   current_file_to_print = current_file_to_print->next_file_ptr;
-    // }
+  //   // Printing file contents
+  //   // SSTFile* current_file_to_print = head_level_1;
+  //   // while( current_file_to_print != NULL ) {
+  //   //   std::cout << "Printing file " << current_file_to_print->file_id << ": ";
+  //   //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
+  //   //     std::cout << current_file_to_print->file_instance[i].first << "\t";
+  //   //   }
+  //   //   std::cout << std::endl;
+  //   //   current_file_to_print = current_file_to_print->next_file_ptr;
+  //   // }
 
-    // DiskMetaFile::getMetaStatistics();
-    //DiskMetaFile::printFileEntries();
-  }
+  //   // DiskMetaFile::getMetaStatistics();
+  //   //DiskMetaFile::printFileEntries();
+  // }
 
-  while(DiskMetaFile::level_current_size[0] >= DiskMetaFile::level_max_size[0]) {
-    if(MemoryBuffer::verbosity == 2)
-      std::cout << "level_current_size = " << DiskMetaFile::level_current_size[0] << " level_max_size = " << DiskMetaFile::level_max_size[0] << std::endl;
-    DiskMetaFile::initateCompaction(0);
-    //exit(1);
-  }
+  // while(DiskMetaFile::level_current_size[0] >= DiskMetaFile::level_max_size[0]) {
+  //   if(MemoryBuffer::verbosity == 2)
+  //     std::cout << "level_current_size = " << DiskMetaFile::level_current_size[0] << " level_max_size = " << DiskMetaFile::level_max_size[0] << std::endl;
+  //   DiskMetaFile::initateCompaction(0);
+  //   //exit(1);
+  // }
 
   // DiskMetaFile::printFileEntries();
   // DiskMetaFile::getMetaStatistics();
@@ -508,13 +639,14 @@ int DiskMetaFile::getKeyLevel(long key){
 
 // Class : WorkloadExecutor
 
-int WorkloadExecutor::insert(long key, string value) {
+int WorkloadExecutor::insert(long sortkey, long deletekey, string value) {
   bool found = false;
+  //std::cout << sortkey << std::endl;
   
   //For UPDATES in inserts
   for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
-    if(MemoryBuffer::buffer[i].first == key) {
-      MemoryBuffer::setCurrentBufferStatistics( 0, (value.size() - MemoryBuffer::buffer[i].second.size()) );
+    if(MemoryBuffer::buffer[i].first.first == sortkey) {
+      MemoryBuffer::setCurrentBufferStatistics( 0, (value.size() - MemoryBuffer::buffer[i].second.size()));
       MemoryBuffer::buffer[i].second = value;
       found = true;
       //std::cout << "key updated : " << key << std::endl;
@@ -528,14 +660,20 @@ int WorkloadExecutor::insert(long key, string value) {
 
   //For INSERTS in inserts
   if(!found) {
+    
     // Check for buffer initialization with " ", " " . This leads the buffer to have an extra element
-    if( MemoryBuffer::buffer.size() == 1 && MemoryBuffer::buffer[0].first == 0 ) {
-      std::cout << "Resetting buffer ..." << std::endl;
-      MemoryBuffer::buffer.resize(0);
-    }
+    // if(MemoryBuffer::buffer.size() == 0) {
+    //   std::cout << "Resetting buffer ..." << std::endl;
+    //   MemoryBuffer::buffer.resize(0);
+    // }
 
-    MemoryBuffer::setCurrentBufferStatistics( 1, (sizeof(key) + value.size()) );
-    MemoryBuffer::buffer.push_back( make_pair( key, value ) );
+    // if( MemoryBuffer::buffer.size() == 1 && MemoryBuffer::buffer[0].first == 0 ) {
+      
+    // }
+    
+
+    MemoryBuffer::setCurrentBufferStatistics( 1, (sizeof(sortkey) + sizeof(deletekey) + value.size() ) );
+    MemoryBuffer::buffer.push_back( make_pair( make_pair ( sortkey, deletekey ) , value ) );
     //std::cout << "key inserted : " << key << std::endl;
     //MemoryBuffer::getCurrentBufferStatistics();
 
@@ -546,26 +684,27 @@ int WorkloadExecutor::insert(long key, string value) {
   if (MemoryBuffer::current_buffer_saturation >= MemoryBuffer::buffer_flush_threshold) {
     //MemoryBuffer::getCurrentBufferStatistics();
     //MemoryBuffer::printBufferEntries();
-    if(MemoryBuffer::verbosity == 2) 
-      std::cout << "Buffer full :: Sorting buffer " ;
-    //Possible Change from here
-    std::sort( MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end() );
+    // if(MemoryBuffer::verbosity == 2) 
+      //std::cout << "Buffer full :: Sorting buffer " ;
 
     if(MemoryBuffer::verbosity == 2) {
-      std::cout << ":::: Buffer sorted :: Flushing buffer to Level 1 " << std::endl;
+      //std::cout << ":::: Buffer sorted :: Flushing buffer to Level 1 " << std::endl;
       MemoryBuffer::printBufferEntries();
     }
-    int status = MemoryBuffer::initiateBufferFlush(1);
-    if(status) {
-      if(MemoryBuffer::verbosity == 2) 
-        std::cout << "Buffer flushed :: Resizing buffer ( size = " << MemoryBuffer::buffer.size() << " ) ";
-      MemoryBuffer::buffer.resize(0);
-      if(MemoryBuffer::verbosity == 2) 
-        std::cout << ":::: Buffer resized ( size = " << MemoryBuffer::buffer.size() << " ) " << std::endl;
-      MemoryBuffer::current_buffer_entry_count = 0;
-      MemoryBuffer::current_buffer_saturation = 0;
-      MemoryBuffer::current_buffer_size = 0;
-    }
+    //Possible Change from here
+    //exit(1);
+    //std::sort( MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end() );
+    int status = MemoryBuffer::initiateBufferFlush(0);
+    // if(status) {
+    //   if(MemoryBuffer::verbosity == 2) 
+    //     std::cout << "Buffer flushed :: Resizing buffer ( size = " << MemoryBuffer::buffer.size() << " ) ";
+    //   MemoryBuffer::buffer.resize(0);
+    //   if(MemoryBuffer::verbosity == 2) 
+    //     std::cout << ":::: Buffer resized ( size = " << MemoryBuffer::buffer.size() << " ) " << std::endl;
+    //   MemoryBuffer::current_buffer_entry_count = 0;
+    //   MemoryBuffer::current_buffer_saturation = 0;
+    //   MemoryBuffer::current_buffer_size = 0;
+    // }
     
   }
 
@@ -580,8 +719,9 @@ int MemoryBuffer::printBufferEntries() {
   std::cout << "Printing sorted buffer (only keys): ";
   //std::cout << MemoryBuffer::buffer.size() << std::endl;
   for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
-    std::cout << MemoryBuffer::buffer[i].first << "\t";
-    size += (sizeof(MemoryBuffer::buffer[i].first) + MemoryBuffer::buffer[i].second.size() );
+    std::cout << MemoryBuffer::buffer[i].first.first << "\t";
+    std::cout << MemoryBuffer::buffer[i].first.second << "\t";
+    size += (2*sizeof(MemoryBuffer::buffer[i].first.first) + MemoryBuffer::buffer[i].second.size() );
   }
   std::cout << std::endl;
   //std::cout << "Buffer size = " << size << std::endl;
@@ -659,6 +799,8 @@ SSTFile* SSTFile::createNewSSTFile(int level_to_flush_in) {
   return new_file;
 }
 
+//MTIP
+
 vector<Page> Page::createNewPages(int page_count){
   EmuEnv* _env = EmuEnv::getInstance();
   vector <Page> pages (page_count);
@@ -675,9 +817,9 @@ vector<Page> Page::createNewPages(int page_count){
 
 
 
-vector<DeleteTile> DeleteTile::createNewDeleteTiles(int delete_tile_size) {
+vector<DeleteTile> DeleteTile::createNewDeleteTiles(int delete_tile_size_in_pages) {
   EmuEnv* _env = EmuEnv::getInstance();
-  vector <DeleteTile> delete_tiles (delete_tile_size);
+  vector <DeleteTile> delete_tiles (delete_tile_size_in_pages);
   for(int i=0;i<delete_tiles.size();i++)
   {
     delete_tiles[i].page_vector = Page::createNewPages(_env->buffer_size_in_pages);
@@ -696,12 +838,22 @@ TestFile TestFile::createNewTestFile(int level_to_flush_in) {
   new_file.file_id = "L" + std::to_string(level_to_flush_in) + "F" + std::to_string(DiskMetaFile::global_level_file_counter[level_to_flush_in]);
   EmuEnv* _env = EmuEnv::getInstance();
 
-  new_file.tile_vector = DeleteTile::createNewDeleteTiles(_env->delete_tile_size);
+  new_file.tile_vector = DeleteTile::createNewDeleteTiles(_env->delete_tile_size_in_pages);
   //std::cout << "Creating new file !!" << std::endl;
 
   return new_file;
 
 }
+
+// int DiskMetaFile::setTestFileHead(TestFile arg, int level) {
+//   DiskMetaFile::test_file_head[level]=arg;
+//   return 1;
+
+// }
+
+// TestFile DiskMetaFile::getTestFileHead(TestFile arg, int level) {
+//   return DiskMetaFile::test_file_head[level];
+// }
 
 
 int DiskMetaFile::setSSTFileHead(SSTFile* arg, int level_to_flush_in) {

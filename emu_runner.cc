@@ -2,7 +2,7 @@
  *  Created on: May 13, 2019
  *  Author: Subhadeep
  */
-
+ 
 #include <sstream>
 #include <iostream>
 #include <cstdio>
@@ -41,7 +41,9 @@ int main(int argc, char *argvx[]) {
   if (parse_arguments2(argc, argvx, _env)){
     exit(1);
   }
-
+  
+  
+  
   // Issuing INSERTS
   if (_env->num_inserts > 0) 
   {
@@ -85,14 +87,16 @@ int runWorkload(EmuEnv* _env) {
   assert(workload_file);
   while(!workload_file.eof()) {
     char instruction;
-    long key;
+    long sortkey;
+    long deletekey;
     string value;
-    workload_file >> instruction >> key >> value;
+    workload_file >> instruction >> sortkey >> deletekey >> value;
     switch (instruction)
     {
     case 'I':
-      //std::cout << instruction << " " << key << " " << value << std::endl;
-      workload_executer.insert(key, value);
+      //std::cout << instruction << " " << sortkey << " " << deletekey << " " << value << std::endl;
+      workload_executer.insert(sortkey, deletekey, value);
+
       break;
     
     //default:
@@ -115,7 +119,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   args::ValueFlag<int> entries_per_page_cmd(group1, "B", "The number of unique inserts to issue in the experiment [def: 128]", {'B', "entries_per_page"});
   args::ValueFlag<int> entry_size_cmd(group1, "E", "The number of unique inserts to issue in the experiment [def: 128 B]", {'E', "entry_size"});
   args::ValueFlag<long> buffer_size_cmd(group1, "M", "The number of unique inserts to issue in the experiment [def: 2 MB]", {'M', "memory_size"});
-  args::ValueFlag<int> delete_tile_size_cmd(group1, "delete_tile_size", "The number of unique inserts to issue in the experiment [def: 1]", {'h', "delete_tile_size"});
+  args::ValueFlag<int> delete_tile_size_in_pages_cmd(group1, "delete_tile_size_in_pages", "The number of unique inserts to issue in the experiment [def: 2]", {'h', "delete_tile_size_in_pages"});
   args::ValueFlag<long> file_size_cmd(group1, "file_size", "The number of unique inserts to issue in the experiment [def: 256 KB]", {"file_size"});
   args::ValueFlag<int> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
@@ -148,7 +152,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->entries_per_page = entries_per_page_cmd ? args::get(entries_per_page_cmd) : 128;
   _env->entry_size = entry_size_cmd ? args::get(entry_size_cmd) : 128;
   _env->buffer_size = buffer_size_cmd ? args::get(buffer_size_cmd) : _env->buffer_size_in_pages * _env->entries_per_page * _env->entry_size;
-  _env->delete_tile_size = delete_tile_size_cmd ? args::get(delete_tile_size_cmd) : 8;
+  _env->delete_tile_size_in_pages = delete_tile_size_in_pages_cmd ? args::get(delete_tile_size_in_pages_cmd) : 2;
   _env->file_size = file_size_cmd ? args::get(file_size_cmd) : _env->buffer_size;
   _env->num_inserts = num_inserts_cmd ? args::get(num_inserts_cmd) : 0;
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
@@ -166,7 +170,7 @@ void printEmulationOutput(EmuEnv* _env) {
   std::cout << _env->entries_per_page << ", ";
   std::cout << _env->entry_size << ", ";
   std::cout << _env->buffer_size << ", ";
-  std::cout << _env->delete_tile_size << ", ";
+  std::cout << _env->delete_tile_size_in_pages << ", ";
   std::cout << _env->file_size << ", ";
   std::cout << _env->num_inserts ;
 

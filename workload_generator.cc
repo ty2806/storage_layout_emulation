@@ -32,12 +32,13 @@ int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
   workload_file.open("workload.txt");
 
   for (long i=0; i<insert_count; ++i) {
-    string key = generateKey();
-    // long value_size = entry_size - key.size();
-    long value_size = entry_size - sizeof(long);
-    string value = generateValue(value_size);
+    string sortkey = generateKey();
+    string deletekey = generateKey();
 
-    workload_file << "I " << key << " " << value << std::endl;
+    // long value_size = entry_size - key.size();
+    long value_size = entry_size - 2*sizeof(long);
+    string value = generateValue(value_size);
+    workload_file << "I " << sortkey << " " << deletekey << " " << value << std::endl;
   }
   
   workload_file.close();
