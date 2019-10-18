@@ -23,7 +23,6 @@ namespace awesome {
 
     public:
     static float buffer_flush_threshold; 
-    //static int buffer_split_factor;     //Doubt
     static long current_buffer_entry_count;
     static long current_buffer_size;
     static float current_buffer_saturation;
@@ -34,14 +33,12 @@ namespace awesome {
     static MemoryBuffer* getBufferInstance(EmuEnv* _env);
     static int getCurrentBufferStatistics();
     static int setCurrentBufferStatistics(int entry_count_change, int buffer_flush_threshold);
-    static int initiateBufferFlush(int level_to_flush_in);      //??? dekhte hobe
+    static int initiateBufferFlush(int level_to_flush_in);     
     static int printBufferEntries();
     //long getBufferSize();
 
-
   };
 
-  //MTIP
 
   class Page {
     public: 
@@ -51,24 +48,11 @@ namespace awesome {
 
 
   class DeleteTile {
-  
+
   public: 
-  //int tile_level;
-  //string tile_id;
   vector < Page > page_vector;
   static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size_in_pages);
-
   };
-
-  class TestFile {
-  
-  public: 
-  int file_level;
-  string file_id;
-  vector < DeleteTile > tile_vector;
-  static struct TestFile createNewTestFile(int level_to_flush_in);
-
-  }; 
 
 
 
@@ -77,12 +61,14 @@ namespace awesome {
   public: 
   int file_level;
   string file_id;
-  vector < pair < long, string > > file_instance;
+
+  vector < DeleteTile > tile_vector;
   struct SSTFile* next_file_ptr;
   
   static struct SSTFile* createNewSSTFile(int level_to_flush_in);
 
-  };
+  }; 
+
 
   class DiskMetaFile {
     private: 
@@ -92,12 +78,7 @@ namespace awesome {
     static int checkAndAdjustLevelSaturation(int level);
 
     public:
-    //static SSTFile* head_level_1;
-
-    //MTIP
-    static vector < vector <TestFile>> test_files;
-    static int setTestFileHead(TestFile arg, int level);
-    static TestFile getTestFileHead(TestFile arg, int level);
+    // static SSTFile* head_level_1;
 
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
