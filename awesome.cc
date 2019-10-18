@@ -94,19 +94,37 @@ int PrintAllEntries() {
 int PopulateDeleteTile(TestFile arg, vector <pair < pair < long, long> , string>> temp_vector, int deletetileid, int level_to_flush_in){
   EmuEnv* _env = EmuEnv::getInstance();
   
-  for(int i = 0; i < _env->delete_tile_size_in_pages; i++) {
+  for(int i = 0; i < 4; ) {
       vector <pair < pair < long, long> , string>> temp_vector2;
       for(int j=0; j < _env->entries_per_page; ++j) {
         temp_vector2.push_back(temp_vector[j]);
       }
-      std::sort(temp_vector2.begin(), temp_vector2.end(), sortbysortkey);
-      temp_vector.erase (temp_vector.begin(),temp_vector.begin() + _env->entries_per_page);
-      //int status = PopulatePage(arg, temp_vector2);
-      arg.tile_vector[deletetileid].page_vector[i].kv_vector.push_back(make_pair( make_pair (
-        temp_vector2[i].first.first , temp_vector2[i].first.second ) , temp_vector2[i].second ));
 
-      cout<<temp_vector2[i].first.first<< " "<<temp_vector2[i].first.second<<endl;
-      DiskMetaFile::test_files[level_to_flush_in].push_back(arg);
+      // std::cout << "\nprinting after sorting on sort key in page " << std::endl;
+      // for (int j = 0; j < temp_vector.size(); ++j) 
+      //   std::cout << "< " << temp_vector[j].first.first << ",  " << temp_vector[j].first.second << " >" << "\t";
+
+      std::sort(temp_vector2.begin(), temp_vector2.end(), sortbysortkey);
+
+      // std::cout << "\nprinting after sorting on sort key in page " << std::endl;
+      // for (int j = 0; j < temp_vector.size(); ++j) 
+      //   std::cout << "< " << temp_vector[j].first.first << ",  " << temp_vector[j].first.second << " >" << "\t";
+
+      std::cout << "\npopulating pages :: vector length = " << temp_vector.size() << std::endl;
+
+      for (int j = 0; j < _env->entries_per_page; ++j) {
+        arg.tile_vector[deletetileid].page_vector[j].kv_vector.push_back(make_pair( make_pair (
+          temp_vector2[j].first.first , temp_vector2[j].first.second ) , temp_vector2[j].second ));
+
+        std::cout << temp_vector2[j].first.first << " " << temp_vector2[j].first.second << std::endl;
+        ++i;
+      }
+
+      temp_vector.erase (temp_vector.begin(), temp_vector.begin() + _env->entries_per_page);
+
+      std::cout << "populated pages\n" << std::endl;
+
+      // DiskMetaFile::test_files[level_to_flush_in].push_back(arg);
       temp_vector2.clear();   
   }
   
@@ -134,7 +152,17 @@ int PopulateFile(TestFile arg, vector <pair < pair < long, long> , string>> temp
         temp_vector2.push_back(temp_vector[j]);
       }
       std::sort(temp_vector2.begin(), temp_vector2.end(), sortbydeletekey);
+
+      // std::cout << "\nprinting before trimming " << std::endl;
+      // for (int j = 0; j < temp_vector.size(); ++j) 
+      //   std::cout << "< " << temp_vector[j].first.first << ",  " << temp_vector[j].first.second << " >" << "\t";
+
       temp_vector.erase (temp_vector.begin(),temp_vector.begin() + _env->delete_tile_size_in_pages * _env->entries_per_page);
+
+      // std::cout << "\nprinting after trimming " << std::endl;
+      // for (int j = 0; j < temp_vector.size(); ++j) 
+      //   std::cout << "< " << temp_vector[j].first.first << ",  " << temp_vector[j].first.second << " >" << "\t";
+      std::cout << "populating delete tile ... \n";
       int status = PopulateDeleteTile(arg, temp_vector2, i, level_to_flush_in);
       temp_vector2.clear();
   }
@@ -142,17 +170,28 @@ int PopulateFile(TestFile arg, vector <pair < pair < long, long> , string>> temp
 }
 
 int sortAndWrite(vector < pair < pair < long, long > , string > > file_to_sort, int level_to_flush_in) {
-
   
-  std::sort(file_to_sort.begin(),file_to_sort.end(), sortbysortkey);
   EmuEnv* _env = EmuEnv::getInstance();
-  int entries_per_file = _env->entries_per_page*_env->buffer_size_in_pages;
+  
+  // std::cout << "\nprinting before sort " << std::endl;
+  // for (int i = 0; i < file_to_sort.size(); ++i) 
+  //   std::cout << "< " << file_to_sort[i].first.first << ",  " << file_to_sort[i].first.second << " >" << "\t";
+
+  std::sort(file_to_sort.begin(),file_to_sort.end(), sortbysortkey);
+
+  // std::cout << "\nprinting after sort " << std::endl;
+  // for (int i = 0; i < file_to_sort.size(); ++i) 
+  //   std::cout << "< " << file_to_sort[i].first.first << ",  " << file_to_sort[i].first.second << " >" << "\t";
+  
+  int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
 
   if(file_to_sort.size() % _env->delete_tile_size_in_pages != 0 && file_to_sort.size() / _env->delete_tile_size_in_pages < 1) {
     std::cout<< " ERROR " << std::endl; exit(1);
   }
   else {
-    int file_count = file_to_sort.size();
+    int file_count = file_to_sort.size() / entries_per_file;
+    std::cout << "\nwriting " << file_count << " file(s)\n";
+
     vector <TestFile> temp_test_files;
     for(int i=0; i < file_count; i++) {
       temp_test_files.push_back(TestFile::createNewTestFile(level_to_flush_in));  
@@ -163,13 +202,24 @@ int sortAndWrite(vector < pair < pair < long, long > , string > > file_to_sort, 
         temp_vector.push_back(file_to_sort[j]);
       }
 
-      file_to_sort.erase (file_to_sort.begin(),file_to_sort.begin() + entries_per_file);      
+      std::cout << "\nprinting before trimming " << std::endl;
+      for (int j = 0; j < file_to_sort.size(); ++j) 
+        std::cout << "< " << file_to_sort[j].first.first << ",  " << file_to_sort[j].first.second << " >" << "\t";
+  
+      file_to_sort.erase (file_to_sort.begin(), file_to_sort.begin() + entries_per_file);  
+
+      std::cout << "\nprinting after trimming " << std::endl;
+      for (int j = 0; j < file_to_sort.size(); ++j) 
+        std::cout << "< " << file_to_sort[j].first.first << ",  " << file_to_sort[j].first.second << " >" << "\t";
+
+      std::cout << "\npopulating file " << entries_per_file << std::endl;
       int status = PopulateFile(temp_test_files[i], temp_vector,level_to_flush_in);
       temp_vector.clear();
     }
-    int status = PrintAllEntries();
-    //exit(1);
+    
   }
+
+  int status = PrintAllEntries();
 }
 
 // CLASS : MemoryBuffer
@@ -213,12 +263,13 @@ int MemoryBuffer::getCurrentBufferStatistics(){
 }
 
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in) { //we can replace level_to_flush_in by 0
-  //std::cout << "Buffer full :: Sorting buffer " ;
-  if(DiskMetaFile::test_files.size()==0) {
-    //std::cout<<"File Count: "<<MemoryBuffer::buffer.size()<<std::endl;
-    DiskMetaFile::test_files.resize(32);
-    sortAndWrite (MemoryBuffer::buffer,level_to_flush_in);
-    //std::cout << " Bla  bal " << std::endl;
+  std::cout << "Initiating buffer flush :: DiskMetaFile::test_files.size() = " << DiskMetaFile::test_files.size() << std::endl;
+  if (DiskMetaFile::test_files.size() < level_to_flush_in) {
+    std::cout << "test_file size: " << DiskMetaFile::test_files.size() << std::endl;
+    DiskMetaFile::test_files.resize(DiskMetaFile::test_files.size() + 1);
+    std::cout << "test_file size: " << DiskMetaFile::test_files.size() << std::endl;
+
+    sortAndWrite (MemoryBuffer::buffer, level_to_flush_in);
   }
 
 
@@ -660,17 +711,6 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value) {
 
   //For INSERTS in inserts
   if(!found) {
-    
-    // Check for buffer initialization with " ", " " . This leads the buffer to have an extra element
-    // if(MemoryBuffer::buffer.size() == 0) {
-    //   std::cout << "Resetting buffer ..." << std::endl;
-    //   MemoryBuffer::buffer.resize(0);
-    // }
-
-    // if( MemoryBuffer::buffer.size() == 1 && MemoryBuffer::buffer[0].first == 0 ) {
-      
-    // }
-    
 
     MemoryBuffer::setCurrentBufferStatistics( 1, (sizeof(sortkey) + sizeof(deletekey) + value.size() ) );
     MemoryBuffer::buffer.push_back( make_pair( make_pair ( sortkey, deletekey ) , value ) );
@@ -683,18 +723,17 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value) {
 
   if (MemoryBuffer::current_buffer_saturation >= MemoryBuffer::buffer_flush_threshold) {
     //MemoryBuffer::getCurrentBufferStatistics();
-    //MemoryBuffer::printBufferEntries();
+    // MemoryBuffer::printBufferEntries();
     // if(MemoryBuffer::verbosity == 2) 
       //std::cout << "Buffer full :: Sorting buffer " ;
 
     if(MemoryBuffer::verbosity == 2) {
-      //std::cout << ":::: Buffer sorted :: Flushing buffer to Level 1 " << std::endl;
+      std::cout << ":::: Buffer full :: Flushing buffer to Level 1 " << std::endl;
       MemoryBuffer::printBufferEntries();
     }
-    //Possible Change from here
-    //exit(1);
+    
     //std::sort( MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end() );
-    int status = MemoryBuffer::initiateBufferFlush(0);
+    int status = MemoryBuffer::initiateBufferFlush(1);
     // if(status) {
     //   if(MemoryBuffer::verbosity == 2) 
     //     std::cout << "Buffer flushed :: Resizing buffer ( size = " << MemoryBuffer::buffer.size() << " ) ";
@@ -719,8 +758,7 @@ int MemoryBuffer::printBufferEntries() {
   std::cout << "Printing sorted buffer (only keys): ";
   //std::cout << MemoryBuffer::buffer.size() << std::endl;
   for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
-    std::cout << MemoryBuffer::buffer[i].first.first << "\t";
-    std::cout << MemoryBuffer::buffer[i].first.second << "\t";
+    std::cout << "< " << MemoryBuffer::buffer[i].first.first << ",  " << MemoryBuffer::buffer[i].first.second << " >" << "\t";
     size += (2*sizeof(MemoryBuffer::buffer[i].first.first) + MemoryBuffer::buffer[i].second.size() );
   }
   std::cout << std::endl;
@@ -802,7 +840,6 @@ SSTFile* SSTFile::createNewSSTFile(int level_to_flush_in) {
 //MTIP
 
 vector<Page> Page::createNewPages(int page_count){
-  EmuEnv* _env = EmuEnv::getInstance();
   vector <Page> pages (page_count);
   for(int i=0;i<pages.size();i++)
   {
@@ -811,7 +848,6 @@ vector<Page> Page::createNewPages(int page_count){
     pages[i].kv_vector = kv_vect;
   }
 
-  //new_delete_tile.page_vector =  
   return pages;
 }
 
@@ -839,6 +875,10 @@ TestFile TestFile::createNewTestFile(int level_to_flush_in) {
   EmuEnv* _env = EmuEnv::getInstance();
 
   new_file.tile_vector = DeleteTile::createNewDeleteTiles(_env->delete_tile_size_in_pages);
+
+  int page_per_delete_tile = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
+  for (int i = 0 ; i < new_file.tile_vector.size(); ++i)
+    new_file.tile_vector[i].page_vector = Page::createNewPages(page_per_delete_tile);
   //std::cout << "Creating new file !!" << std::endl;
 
   return new_file;
