@@ -56,6 +56,7 @@ int DiskMetaFile::compaction_file_counter[32] = {};
 bool sortbysortkey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b);
 bool sortbydeletekey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b);
 int sortAndWrite(vector<pair<pair<long, long>, string>> file_to_sort, int level_to_flush_in);
+int compactAndFlush(vector<pair<pair<long, long>, string>> vector_to_compact, int level_to_flush_in);
 int PopulateFile(SSTFile *arg, vector<pair<pair<long, long>, string>> temp_vector, int level_to_flush_in);
 int PopulateDeleteTile(SSTFile *arg, vector<pair<pair<long, long>, string>> temp_vector, int deletetileid, int level_to_flush_in);
 int PrintAllEntries();
@@ -107,111 +108,11 @@ int MemoryBuffer::getCurrentBufferStatistics()
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
 { //we can replace level_to_flush_in by 0
 
-    int entries_per_file = MemoryBuffer::current_buffer_entry_count;
-    sortAndWrite(MemoryBuffer::buffer, level_to_flush_in - 1);
+  int entries_per_file = MemoryBuffer::current_buffer_entry_count;
+  sortAndWrite(MemoryBuffer::buffer, level_to_flush_in);
 
-    MemoryBuffer::buffer_flush_count++;
-    DiskMetaFile::setMetaStatistics(level_to_flush_in - 1);
-    // Printing file contents
-    // SSTFile* current_file_to_print = head_level_1;
-    // while( current_file_to_print != NULL ) {
-    //   std::cout << "Printing file " << current_file_to_print->file_id << std::endl;
-    //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
-    //     std::cout << current_file_to_print->file_instance[i].first << "\t";
-    //   }
-    //   std::cout << std::endl;
-    //   current_file_to_print = current_file_to_print->next_file_ptr;
-    // }
-
-
-  // else {
-  //   SSTFile* old_head_L1_reference = DiskMetaFile::getSSTFileHead(level_to_flush_in);
-  //   vector < pair < long, string > > temp_vector;
-  //   vector <long> duplicate_key_search_space;
-
-  //   for(int i=0; i < MemoryBuffer::buffer.size(); ++i) {
-  //     temp_vector.push_back( make_pair( MemoryBuffer::buffer[i].first, MemoryBuffer::buffer[i].second ) );
-  //     duplicate_key_search_space.push_back(MemoryBuffer::buffer[i].first);
-  //   }
-
-  //   // std::cout << "Content of duplicate_key_search_space : " << std::endl;
-  //   // for(int i=0; i < duplicate_key_search_space.size(); ++i) {
-  //   //   std::cout << duplicate_key_search_space[i] << "\t";
-  //   // }
-  //   // std::cout << std::endl;
-
-  //   while(old_head_L1_reference != NULL) {
-  //     for(int i=0; i < old_head_L1_reference->file_instance.size(); ++i) {
-  //       long key = old_head_L1_reference->file_instance[i].first;
-  //       if(!std::binary_search(duplicate_key_search_space.begin(), duplicate_key_search_space.end(), key)) {
-  //         temp_vector.push_back( make_pair( old_head_L1_reference->file_instance[i].first, old_head_L1_reference->file_instance[i].second ) );
-  //         // std::cout << "found " << key << "\n";
-  //       }
-  //     }
-  //     old_head_L1_reference = old_head_L1_reference->next_file_ptr;
-  //   }
-
-  //   std::sort(temp_vector.begin(), temp_vector.end());
-
-  //   // // Printing
-  //   // std::cout << "Printing sorted entries before spliting and flushing: " << std::endl;
-  //   // for(int i=0; i < temp_vector.size(); ++i) {
-  //   //   std::cout << temp_vector[i].first << "\t";
-  //   // }
-  //   // std::cout << std::endl;
-
-  //   // New content
-  //   //int entries_per_file = MemoryBuffer::current_buffer_entry_count / MemoryBuffer::buffer_split_factor;
-  //   int entries_per_file = MemoryBuffer::current_buffer_entry_count;
-
-  //   SSTFile* head_level_1 = SSTFile::createNewSSTFile(level_to_flush_in);
-  //   // std::cout << "Printing 1 :: " << head_level_1->file_id  << std::endl;
-
-  //   SSTFile* current_file = head_level_1;
-  //   for (int i=0; i < temp_vector.size(); ) {
-  //     do {
-  //       current_file->file_instance.push_back( make_pair( temp_vector[i].first, temp_vector[i].second ) );
-  //       ++i;
-  //       //std::cout << i << " : " << temp_vector[i].first << " ::\t";
-  //     } while( i % entries_per_file != 0 && i < temp_vector.size() );
-
-  //     //std::cout << "i = " << i << " :: creating new SST File " << std::endl;
-  //     if( i != temp_vector.size() ) {
-  //       SSTFile* new_SSTfile = SSTFile::createNewSSTFile(level_to_flush_in);
-  //       current_file->next_file_ptr = new_SSTfile;
-  //       current_file = new_SSTfile;
-  //     }
-  //   }
-
-  //   MemoryBuffer::buffer_flush_count++;
-  //   DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
-  //   DiskMetaFile::setMetaStatistics(level_to_flush_in);
-
-  //   // Printing file contents
-  //   // SSTFile* current_file_to_print = head_level_1;
-  //   // while( current_file_to_print != NULL ) {
-  //   //   std::cout << "Printing file " << current_file_to_print->file_id << ": ";
-  //   //   for(int i=0; i < current_file_to_print->file_instance.size(); ++i) {
-  //   //     std::cout << current_file_to_print->file_instance[i].first << "\t";
-  //   //   }
-  //   //   std::cout << std::endl;
-  //   //   current_file_to_print = current_file_to_print->next_file_ptr;
-  //   // }
-
-  //   // DiskMetaFile::getMetaStatistics();
-  //   //DiskMetaFile::printFileEntries();
-  // }
-
-  // while(DiskMetaFile::level_current_size[0] >= DiskMetaFile::level_max_size[0]) {
-  //   if(MemoryBuffer::verbosity == 2)
-  //     std::cout << "level_current_size = " << DiskMetaFile::level_current_size[0] << " level_max_size = " << DiskMetaFile::level_max_size[0] << std::endl;
-  //   DiskMetaFile::initateCompaction(0);
-  //   //exit(1);
-  // }
-
-  // DiskMetaFile::printFileEntries();
-  // DiskMetaFile::getMetaStatistics();
-
+  MemoryBuffer::buffer_flush_count++;
+  //DiskMetaFile::setMetaStatistics(level_to_flush_in);
   return 1;
 }
 
@@ -239,8 +140,8 @@ int PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, string>> vec
       long sort_key_to_insert = vector_to_populate_page[j].first.first;
       long delete_key_to_insert = vector_to_populate_page[j].first.second;
 
-      int status = generateMetaData(file, file->tile_vector[deletetileid], 
-      file->tile_vector[deletetileid].page_vector[i], sort_key_to_insert, delete_key_to_insert);
+      int status = generateMetaData(file, file->tile_vector[deletetileid],
+                                    file->tile_vector[deletetileid].page_vector[i], sort_key_to_insert, delete_key_to_insert);
 
       file->tile_vector[deletetileid].page_vector[i].kv_vector.push_back(make_pair(make_pair(
                                                                                        vector_to_populate_page[j].first.first, vector_to_populate_page[j].first.second),
@@ -289,11 +190,63 @@ int PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> vector_to
   return 1;
 }
 
+int compactAndFlush(vector<pair<pair<long, long>, string>> vector_to_compact, int level_to_flush_in)
+{
+  EmuEnv *_env = EmuEnv::getInstance();
+  SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
+  int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
+  int file_count = vector_to_compact.size() / entries_per_file;
+  std::cout << "\nwriting " << file_count << " file(s)\n";
+  for (int i = 0; i < file_count; i++)
+  {
+    vector<pair<pair<long, long>, string>> vector_to_populate_file;
+    for (int j = 0; j < entries_per_file; ++j)
+    {
+      vector_to_populate_file.push_back(vector_to_compact[j]);
+    }
+
+    std::cout << "\nprinting before trimming " << std::endl;
+    for (int j = 0; j < vector_to_compact.size(); ++j)
+      std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
+                << "\t";
+
+    vector_to_compact.erase(vector_to_compact.begin(), vector_to_compact.begin() + entries_per_file);
+
+    std::cout << "\nprinting after trimming " << std::endl;
+    for (int j = 0; j < vector_to_compact.size(); ++j)
+      std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
+                << "\t";
+
+    std::cout << "\npopulating file " << head_level_1 << std::endl;
+
+    SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
+    SSTFile *moving_head = head_level_1;
+
+    if (i == 0)
+    {
+      head_level_1 = new_file;
+      DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
+      int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
+    }
+
+    else
+    {
+      while (moving_head->next_file_ptr)
+      {
+        moving_head = moving_head->next_file_ptr;
+      }
+      int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
+      moving_head->next_file_ptr = new_file;
+    }
+
+    vector_to_populate_file.clear();
+  }
+}
+
 int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int level_to_flush_in)
 {
 
   EmuEnv *_env = EmuEnv::getInstance();
-
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
   int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
 
@@ -301,12 +254,7 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
   {
     std::cout << "NULL" << std::endl;
 
-    // std::cout << "\nprinting before sort " << std::endl;
-    // for (int i = 0; i < vector_to_compact.size(); ++i)
-    //   std::cout << "< " << vector_to_compact[i].first.first << ",  " << vector_to_compact[i].first.second << " >" << "\t";
-
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), sortbysortkey);
-
     if (vector_to_compact.size() % _env->delete_tile_size_in_pages != 0 && vector_to_compact.size() / _env->delete_tile_size_in_pages < 1)
     {
       std::cout << " ERROR " << std::endl;
@@ -314,67 +262,24 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
     }
     else
     {
-      int file_count = vector_to_compact.size() / entries_per_file;
-      std::cout << "\nwriting " << file_count << " file(s)\n";
-
-      for (int i = 0; i < file_count; i++)
-      {
-
-        vector<pair<pair<long, long>, string>> vector_to_populate_file;
-        for (int j = 0; j < entries_per_file; ++j)
-        {
-          vector_to_populate_file.push_back(vector_to_compact[j]);
-        }
-
-        std::cout << "\nprinting before trimming " << std::endl;
-        for (int j = 0; j < vector_to_compact.size(); ++j)
-          std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
-                    << "\t";
-
-        vector_to_compact.erase(vector_to_compact.begin(), vector_to_compact.begin() + entries_per_file);
-
-        std::cout << "\nprinting after trimming " << std::endl;
-        for (int j = 0; j < vector_to_compact.size(); ++j)
-          std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
-                    << "\t";
-
-        std::cout << "\npopulating file " << head_level_1 << std::endl;
-
-        SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
-        SSTFile *moving_head = head_level_1;
-
-        if (i == 0)
-        {
-          head_level_1 = new_file;
-          DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
-          int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
-        }
-
-        else
-        {
-          while (!moving_head->next_file_ptr)
-          {
-            moving_head = moving_head->next_file_ptr;
-          }
-          int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
-          moving_head->next_file_ptr = new_file;
-        }
-
-        vector_to_populate_file.clear();
-      }
-      DiskMetaFile::global_level_counter++;
+      compactAndFlush(vector_to_compact,level_to_flush_in);
     }
+    DiskMetaFile::global_level_counter++;
   }
-  
-  else 
+
+  else
   {
     std::cout << "head not null anymore" << std::endl;
+    SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
+    SSTFile *moving_head = head_level_1;
 
-    while(!head_level_1)
+    std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
+
+    while (moving_head)
     {
-      for (int k = 0; k < head_level_1->tile_vector.size(); k++)
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
       {
-        DeleteTile delete_tile = head_level_1->tile_vector[k];
+        DeleteTile delete_tile = moving_head->tile_vector[k];
         for (int l = 0; l < delete_tile.page_vector.size(); l++)
         {
           Page page = delete_tile.page_vector[l];
@@ -384,62 +289,17 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
           }
         }
       }
-      head_level_1 = head_level_1->next_file_ptr;
+      moving_head = moving_head->next_file_ptr;
     }
-    
+
+    std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
+
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), sortbysortkey);
-    int file_count = vector_to_compact.size() / entries_per_file;
-    
-    std::cout << "Second Phase Starting... Writing " << file_count << " file(s)\n";
-
-    for (int i = 0; i < file_count; i++)
-    {
-      vector<pair<pair<long, long>, string>> vector_to_populate_file;
-      for (int j = 0; j < entries_per_file; ++j)
-      {
-        vector_to_populate_file.push_back(vector_to_compact[j]);
-      }
-
-      std::cout << "\nprinting before trimming " << std::endl;
-      for (int j = 0; j < vector_to_compact.size(); ++j) {
-        std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >" << "\t";
-      }
-
-      vector_to_compact.erase(vector_to_compact.begin(), vector_to_compact.begin() + entries_per_file);
-
-      std::cout << "\nprinting after trimming " << std::endl;
-      for (int j = 0; j < vector_to_compact.size(); ++j) {
-        std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >" << "\t";
-      }
-
-      std::cout << "\npopulating file " << head_level_1 << std::endl;
-
-      SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
-      SSTFile *moving_head = head_level_1;
-      
-      if (i == 0)
-      {
-        head_level_1 = new_file;
-        DiskMetaFile::setSSTFileHead(head_level_1, level_to_flush_in);
-        int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
-      }
-      else
-      {
-        while (!moving_head->next_file_ptr)
-        {
-          moving_head = moving_head->next_file_ptr;
-        }
-        int status = PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
-        moving_head->next_file_ptr = new_file;
-      }
-      
-      vector_to_populate_file.clear();
-    }
-    DiskMetaFile::global_level_counter++;
+    compactAndFlush(vector_to_compact,level_to_flush_in);
   }
 
   int status = PrintAllEntries();
-  //exit(1);
+
 }
 
 int DiskMetaFile::initateCompaction(int compaction_mode)
@@ -793,11 +653,12 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
 
     //std::sort( MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end() );
     int status = MemoryBuffer::initiateBufferFlush(1);
-    if(status) {
-      if(MemoryBuffer::verbosity == 2)
+    if (status)
+    {
+      if (MemoryBuffer::verbosity == 2)
         std::cout << "Buffer flushed :: Resizing buffer ( size = " << MemoryBuffer::buffer.size() << " ) ";
       MemoryBuffer::buffer.resize(0);
-      if(MemoryBuffer::verbosity == 2)
+      if (MemoryBuffer::verbosity == 2)
         std::cout << ":::: Buffer resized ( size = " << MemoryBuffer::buffer.size() << " ) " << std::endl;
       MemoryBuffer::current_buffer_entry_count = 0;
       MemoryBuffer::current_buffer_saturation = 0;
@@ -923,8 +784,8 @@ vector<Page> Page::createNewPages(int page_count)
   for (int i = 0; i < pages.size(); i++)
   {
     vector<pair<pair<long, long>, string>> kv_vect;
-    pages[i].min_sort_key=-1;
-    pages[i].max_sort_key=-1;
+    pages[i].min_sort_key = -1;
+    pages[i].max_sort_key = -1;
 
     pages[i].kv_vector = kv_vect;
   }
@@ -970,7 +831,7 @@ int DiskMetaFile::setSSTFileHead(SSTFile *arg, int level_to_flush_in)
 
 SSTFile *DiskMetaFile::getSSTFileHead(int level)
 {
-  return DiskMetaFile::level_head[level - 1];
+  return DiskMetaFile::level_head[level];
 }
 
 int DiskMetaFile::setMetaStatistics(int level)
@@ -1069,20 +930,20 @@ int PrintAllEntries()
   for (int i = 0; i < DiskMetaFile::global_level_counter; i++)
   {
 
+    std::cout << "Level count: " << DiskMetaFile::global_level_counter << std::endl;
+
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i + 1);
-
-    for (int j = 0; j < DiskMetaFile::global_level_file_counter[i]; j++)
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
     {
-      // std::cout << "File : " << j << " Min Sort Key : " << level_i_head -> min_sort_key << " Max Sort Key : " << level_i_head -> max_sort_key << std::endl;
-      // std::cout << "File : " << j << " Min Delete Key : " << level_i_head -> min_delete_key << " Max Delete Key : " << level_i_head -> max_delete_key << std::endl;
-
-      for (int k = 0; k < level_i_head->tile_vector.size(); k++)
+      // std::cout << "File : " << j << " Min Sort Key : " << moving_head -> min_sort_key << " Max Sort Key : " << moving_head -> max_sort_key << std::endl;
+      // std::cout << "File : " << j << " Min Delete Key : " << moving_head -> min_delete_key << " Max Delete Key : " << moving_head -> max_delete_key << std::endl;
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
       {
 
-        DeleteTile delete_tile = level_i_head->tile_vector[k];
+        DeleteTile delete_tile = moving_head->tile_vector[k];
         // std::cout << "Delete Tile : " << k << " Min Sort Key : " << delete_tile.min_sort_key << " Max Sort Key : " << delete_tile.max_sort_key << std::endl;
         // std::cout << "Delete Tile : " << k << " Min Delete Key : " << delete_tile.min_delete_key << " Max Delete Key : " << delete_tile.max_delete_key << std::endl;
-
         for (int l = 0; l < delete_tile.page_vector.size(); l++)
         {
           Page page = delete_tile.page_vector[l];
@@ -1090,14 +951,14 @@ int PrintAllEntries()
 
           for (int m = 0; m < page.kv_vector.size(); m++)
           {
-            std::cout << "Level : " << i << "\tFile: " << j << "\t\tDelete tile : " << k << "\t\tPage : "
-                      << l << "\tSort Key: " << level_i_head->tile_vector[k].page_vector[l].kv_vector[m].first.first
+            std::cout << "Level : " << i << "\tFile: " << moving_head->file_id << "\t\tDelete tile : " << k << "\t\tPage : "
+                      << l << "\tSort Key: " << page.kv_vector[m].first.first
                       << "\t\tDelete Key:   " << page.kv_vector[m].first.second << "\tValue: "
                       << page.kv_vector[m].second << std::endl;
           }
         }
       }
-      level_i_head = level_i_head->next_file_ptr;
+      moving_head = moving_head->next_file_ptr;
     }
   }
   return 1;
