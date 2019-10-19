@@ -58,8 +58,8 @@ int main(int argc, char *argvx[]) {
     int s = runWorkload(_env); 
 
     MemoryBuffer::getCurrentBufferStatistics();
-    DiskMetaFile::getMetaStatistics();
-    WorkloadExecutor::getWorkloadStatictics(_env);
+    //DiskMetaFile::getMetaStatistics();
+    //WorkloadExecutor::getWorkloadStatictics(_env);
 
     //assert(_env->num_inserts == inserted); 
   }

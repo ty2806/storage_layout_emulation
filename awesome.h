@@ -85,15 +85,17 @@ namespace awesome {
     static int getCurrentLevelCount();
     static int getKeyLevel(long key);
     static pair <long, long> getMatchingKeyFile(long min_key, long max_key, int key_level); //??? Definition change hobe
-    static int checkAndAdjustLevelSaturation(int level);
 
     public:
     // static SSTFile* head_level_1;
-
+    static int checkAndAdjustLevelSaturation(int level);
+    static long getLevelEntryCount(int level);
+    static int getTotalLevelCount();
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
     static int setMetaStatistics(int level);
     static int getMetaStatistics();
+    static int getMetaStatistics2();
     static int initateCompaction(int compaction_mode);
     static int initiateAwesomeSortMerge();
     static int printFileEntries();

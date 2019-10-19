@@ -70,10 +70,10 @@ MemoryBuffer::MemoryBuffer(EmuEnv *_env)
   buffer_flush_threshold = _env->buffer_flush_threshold;
   verbosity = _env->verbosity;
 
-  for (int i = 0; i < 32; ++i)
+  for (int i = 1; i < 32; ++i)
   {
     DiskMetaFile::disk_run_flush_threshold[i] = _env->disk_run_flush_threshold;
-    DiskMetaFile::level_max_size[i] = _env->buffer_size * pow(_env->size_ratio, (i + 1));
+    DiskMetaFile::level_max_size[i] = _env->buffer_size * pow(_env->size_ratio, i);
   }
 }
 
@@ -114,6 +114,68 @@ int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
   MemoryBuffer::buffer_flush_count++;
   //DiskMetaFile::setMetaStatistics(level_to_flush_in);
   return 1;
+}
+
+long DiskMetaFile::getLevelEntryCount(int level)
+{
+  SSTFile *level_head = DiskMetaFile::getSSTFileHead(level);
+  SSTFile *moving_head = level_head;
+  long level_size_in_entries = 0;
+  while (moving_head)
+  {
+    for (int k = 0; k < moving_head->tile_vector.size(); k++)
+    {
+      DeleteTile delete_tile = moving_head->tile_vector[k];
+      for (int l = 0; l < delete_tile.page_vector.size(); l++)
+      {
+        Page page = delete_tile.page_vector[l];
+
+        for (int m = 0; m < page.kv_vector.size(); m++)
+        {
+          level_size_in_entries ++;
+        }
+      }
+    }
+    moving_head = moving_head->next_file_ptr;
+  }
+  return level_size_in_entries;
+}
+
+int DiskMetaFile::getTotalLevelCount()
+{
+  int level_count = 0;
+  for(int i= 1 ; i <= 32 ; i++)
+  {
+    SSTFile *level_head = DiskMetaFile::getSSTFileHead(i);
+    if (level_head)
+    {
+      level_count++;
+    }
+    else
+    {
+      return level_count;
+    }
+  }
+}
+
+
+int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
+{
+  int entry_count_in_level = getLevelEntryCount(level);
+  EmuEnv *_env = EmuEnv::getInstance();
+  int max_entry_count_in_level = DiskMetaFile::level_max_size[level]/_env->entry_size;
+  if(entry_count_in_level >= max_entry_count_in_level){
+    std::cout << "Saturation Reached......" << endl;
+    SSTFile *level_head = DiskMetaFile::getSSTFileHead(level);
+    DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
+    SSTFile *next_level_head = DiskMetaFile::getSSTFileHead(level+1);
+    DiskMetaFile::setSSTFileHead(level_head, level+1);
+    level_head->next_file_ptr=next_level_head;
+    checkAndAdjustLevelSaturation(level+1);
+  }
+  else {
+    return 1;
+  }
 }
 
 int PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, string>> vector_to_populate_tile, int deletetileid, int level_to_flush_in)
@@ -262,7 +324,7 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
     }
     else
     {
-      compactAndFlush(vector_to_compact,level_to_flush_in);
+      compactAndFlush(vector_to_compact, level_to_flush_in);
     }
     DiskMetaFile::global_level_counter++;
   }
@@ -295,11 +357,12 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
     std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
 
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), sortbysortkey);
-    compactAndFlush(vector_to_compact,level_to_flush_in);
+    int file_count = vector_to_compact.size() / entries_per_file;
+
+    compactAndFlush(vector_to_compact, level_to_flush_in);
   }
-
+  int saturation = DiskMetaFile::checkAndAdjustLevelSaturation(level_to_flush_in);
   int status = PrintAllEntries();
-
 }
 
 int DiskMetaFile::initateCompaction(int compaction_mode)
@@ -484,50 +547,50 @@ int DiskMetaFile::initateCompaction(int compaction_mode)
   return 1;
 }
 
-int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
-{
-  SSTFile *level_head_reference = DiskMetaFile::getSSTFileHead(level);
-  SSTFile *predecessor_ptr = level_head_reference;
-  SSTFile *traversing_ptr = predecessor_ptr->next_file_ptr;
+// int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
+// {
+//   SSTFile *level_head_reference = DiskMetaFile::getSSTFileHead(level);
+//   SSTFile *predecessor_ptr = level_head_reference;
+//   SSTFile *traversing_ptr = predecessor_ptr->next_file_ptr;
 
-  if (DiskMetaFile::level_current_size[level - 1] >= DiskMetaFile::level_max_size[level - 1])
-  {
-    if (MemoryBuffer::verbosity == 2)
-      std::cout << "Level " << level << " exceeded capacity after compaction :: Adjusting level size" << std::endl;
+//   if (DiskMetaFile::level_current_size[level - 1] >= DiskMetaFile::level_max_size[level - 1])
+//   {
+//     if (MemoryBuffer::verbosity == 2)
+//       std::cout << "Level " << level << " exceeded capacity after compaction :: Adjusting level size" << std::endl;
 
-    while (traversing_ptr->next_file_ptr != NULL)
-    {
-      predecessor_ptr = predecessor_ptr->next_file_ptr;
-      traversing_ptr = traversing_ptr->next_file_ptr;
-    }
+//     while (traversing_ptr->next_file_ptr != NULL)
+//     {
+//       predecessor_ptr = predecessor_ptr->next_file_ptr;
+//       traversing_ptr = traversing_ptr->next_file_ptr;
+//     }
 
-    SSTFile *next_level_head_reference = DiskMetaFile::getSSTFileHead(level + 1);
-    if (MemoryBuffer::verbosity == 2)
-      std::cout << "Fetching pointer for Level = " << level + 1 << std::endl;
+//     SSTFile *next_level_head_reference = DiskMetaFile::getSSTFileHead(level + 1);
+//     if (MemoryBuffer::verbosity == 2)
+//       std::cout << "Fetching pointer for Level = " << level + 1 << std::endl;
 
-    if (next_level_head_reference == NULL)
-    {
-      predecessor_ptr->next_file_ptr = NULL;
-      std::cout << "Level " << level << " full :: Creating new Level " << level + 1 << std::endl;
-      DiskMetaFile::setSSTFileHead(traversing_ptr, level + 1);
-      // SSTFile* new_next_level_head = SSTFile::createNewSSTFile(level+1);
-      // DiskMetaFile::setSSTFileHead(traversing_ptr, level+1);
-    }
-    else
-    {
-      predecessor_ptr->next_file_ptr = NULL;
-      traversing_ptr->next_file_ptr = next_level_head_reference->next_file_ptr;
-      DiskMetaFile::setSSTFileHead(traversing_ptr, level + 1);
-    }
+//     if (next_level_head_reference == NULL)
+//     {
+//       predecessor_ptr->next_file_ptr = NULL;
+//       std::cout << "Level " << level << " full :: Creating new Level " << level + 1 << std::endl;
+//       DiskMetaFile::setSSTFileHead(traversing_ptr, level + 1);
+//       // SSTFile* new_next_level_head = SSTFile::createNewSSTFile(level+1);
+//       // DiskMetaFile::setSSTFileHead(traversing_ptr, level+1);
+//     }
+//     else
+//     {
+//       predecessor_ptr->next_file_ptr = NULL;
+//       traversing_ptr->next_file_ptr = next_level_head_reference->next_file_ptr;
+//       DiskMetaFile::setSSTFileHead(traversing_ptr, level + 1);
+//     }
 
-    DiskMetaFile::setMetaStatistics(level);
-    DiskMetaFile::setMetaStatistics(level + 1);
+//     DiskMetaFile::setMetaStatistics(level);
+//     DiskMetaFile::setMetaStatistics(level + 1);
 
-    DiskMetaFile::checkAndAdjustLevelSaturation(level + 1);
-  }
+//     DiskMetaFile::checkAndAdjustLevelSaturation(level + 1);
+//   }
 
-  return 1;
-}
+//   return 1;
+// }
 
 pair<long, long> DiskMetaFile::getMatchingKeyFile(long min_key, long max_key, int key_level)
 {
@@ -864,13 +927,24 @@ int DiskMetaFile::setMetaStatistics(int level)
   return 1;
 }
 
+int DiskMetaFile::getMetaStatistics2() 
+{
+  std::cout << "**************************** PRINTING META FILE STATISTICS ****************************" << std::endl;
+  std::cout << "L\t\tfile_count\tentry_count\tlevel_size" << std::endl;
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    std::cout << i << "\t" << setfill(' ') << setw(8) << DiskMetaFile::level_file_count[i] << "\t\t"
+              << DiskMetaFile::level_entry_count[i] << std::endl;
+  }
+}
+
 int DiskMetaFile::getMetaStatistics()
 {
   std::cout << "**************************** PRINTING META FILE STATISTICS ****************************" << std::endl;
   std::cout << "L\tmin_key\t\tmax_key\t\tfile_count\tentry_count\tlevel_size" << std::endl;
-  for (int i = 0; i < 32 && DiskMetaFile::level_head[i]; ++i)
+  for (int i = 1; i < 32 && DiskMetaFile::level_head[i]; ++i)
   {
-    std::cout << i + 1 << "\t" << setfill(' ') << setw(8) << DiskMetaFile::level_min_key[i] << "\t"
+    std::cout << i << "\t" << setfill(' ') << setw(8) << DiskMetaFile::level_min_key[i] << "\t"
               << setfill(' ') << setw(8) << DiskMetaFile::level_max_key[i] << "\t\t" << DiskMetaFile::level_file_count[i] << "\t\t"
               << DiskMetaFile::level_entry_count[i] << "\t\t" << DiskMetaFile::level_current_size[i] << std::endl;
   }
@@ -926,13 +1000,16 @@ int DiskMetaFile::printFileEntries()
 int PrintAllEntries()
 {
   std::cout << "*******PRINT ALL****************" << std::endl;
+  EmuEnv *_env = EmuEnv::getInstance();
+  std::cout << "Buffer size in pages (P): " << _env->buffer_size_in_pages << std::endl;
+  std::cout << "Entries per pages (B): " << _env->entries_per_page << std::endl;
+  std::cout << "Entry Size (E): " << _env->entry_size << std::endl;
+  std::cout << "Buffer Size (PBE): " << _env->buffer_size << std::endl;
+  std::cout << "Size Ratio: " << _env->size_ratio << std::endl;
 
-  for (int i = 0; i < DiskMetaFile::global_level_counter; i++)
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
-
-    std::cout << "Level count: " << DiskMetaFile::global_level_counter << std::endl;
-
-    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i + 1);
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
     SSTFile *moving_head = level_i_head;
     while (moving_head)
     {
