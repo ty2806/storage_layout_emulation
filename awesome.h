@@ -82,23 +82,20 @@ namespace awesome {
 
   class DiskMetaFile {
     private: 
-    static int getCurrentLevelCount();
-    static int getKeyLevel(long key);
     static pair <long, long> getMatchingKeyFile(long min_key, long max_key, int key_level); //??? Definition change hobe
 
     public:
     // static SSTFile* head_level_1;
     static int checkAndAdjustLevelSaturation(int level);
     static long getLevelEntryCount(int level);
+    static int getLevelFileCount(int level);
     static int getTotalLevelCount();
+
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
-    static int setMetaStatistics(int level);
+
     static int getMetaStatistics();
-    static int getMetaStatistics2();
-    static int initateCompaction(int compaction_mode);
-    static int initiateAwesomeSortMerge();
-    static int printFileEntries();
+    static int printAllEntries();
 
     static SSTFile* level_head[32];
 
@@ -110,7 +107,6 @@ namespace awesome {
 
     static long level_max_size[32];
     static long global_level_file_counter[32];
-    static long global_level_counter;
     static float disk_run_flush_threshold[32];
 
     static int compaction_counter[32];
@@ -118,15 +114,12 @@ namespace awesome {
     static int compaction_through_point_manipulation_counter[32];
     static int compaction_file_counter[32];
 
-
     ////static disk_run_flush_threshold;
-
   };
 
 
   class WorkloadExecutor {
     private:
-    
     
     public:
     static long total_insert_count;
@@ -139,8 +132,6 @@ namespace awesome {
     static int getWorkloadStatictics(EmuEnv* _env);
 
   };
-
-  
 
 } // namespace awesome
 
