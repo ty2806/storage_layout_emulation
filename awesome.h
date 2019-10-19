@@ -42,6 +42,8 @@ namespace awesome {
 
   class Page {
     public: 
+    long min_sort_key;
+    long max_sort_key;
     vector <pair < pair < long, long> , string>> kv_vector;
     static struct vector<Page> createNewPages(int page_count);
   };
@@ -49,7 +51,11 @@ namespace awesome {
 
   class DeleteTile {
 
-  public: 
+  public:
+  long min_sort_key;
+  long max_sort_key;
+  long min_delete_key;
+  long max_delete_key;
   vector < Page > page_vector;
   static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size_in_pages);
   };
@@ -61,6 +67,10 @@ namespace awesome {
   public: 
   int file_level;
   string file_id;
+  long min_sort_key;
+  long max_sort_key;
+  long min_delete_key;
+  long max_delete_key;
 
   vector < DeleteTile > tile_vector;
   struct SSTFile* next_file_ptr;
@@ -98,6 +108,7 @@ namespace awesome {
 
     static long level_max_size[32];
     static long global_level_file_counter[32];
+    static long global_level_counter;
     static float disk_run_flush_threshold[32];
 
     static int compaction_counter[32];
