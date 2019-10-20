@@ -44,6 +44,8 @@ namespace awesome {
     public: 
     long min_sort_key;
     long max_sort_key;
+    long min_delete_key;
+    long max_delete_key;
     vector <pair < pair < long, long> , string>> kv_vector;
     static struct vector<Page> createNewPages(int page_count);
   };
@@ -90,6 +92,9 @@ namespace awesome {
     static long getLevelEntryCount(int level);
     static int getLevelFileCount(int level);
     static int getTotalLevelCount();
+    static int checkDeleteCount (int deletekey);
+    static int pointQuery (int key);
+    static int rangeQuery (int lowerlimit, int upperlimit);
 
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);

@@ -59,6 +59,10 @@ int main(int argc, char *argvx[]) {
     DiskMetaFile::printAllEntries();
     MemoryBuffer::getCurrentBufferStatistics();
     DiskMetaFile::getMetaStatistics();
+    std::cout << std::endl;
+    DiskMetaFile::checkDeleteCount(700);
+    DiskMetaFile::pointQuery (540);
+    DiskMetaFile::rangeQuery(2000,5000);
     
     //WorkloadExecutor::getWorkloadStatictics(_env);
 

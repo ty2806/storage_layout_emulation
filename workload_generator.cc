@@ -33,7 +33,7 @@ int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
 
   for (long i=0; i<insert_count; ++i) {
     string sortkey = generateKey();
-    string deletekey = generateKey();
+    string deletekey = std::to_string(i + 1);
 
     // long value_size = entry_size - key.size();
     long value_size = entry_size - 2*sizeof(long);

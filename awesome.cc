@@ -309,6 +309,8 @@ vector<Page> Page::createNewPages(int page_count)
     vector<pair<pair<long, long>, string>> kv_vect;
     pages[i].min_sort_key = -1;
     pages[i].max_sort_key = -1;
+    pages[i].min_delete_key = -1;
+    pages[i].max_delete_key = -1;
 
     pages[i].kv_vector = kv_vect;
   }
@@ -479,6 +481,119 @@ int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int l
   int saturation = DiskMetaFile::checkAndAdjustLevelSaturation(level_to_flush_in);
 }
 
+int DiskMetaFile::rangeQuery (int lowerlimit, int upperlimit) {
+
+  int occurances = 0;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      if (moving_head->min_sort_key > upperlimit || moving_head->max_sort_key < lowerlimit ) {
+        moving_head = moving_head->next_file_ptr;
+        continue;
+      } 
+      else {
+        for (int k = 0; k < moving_head->tile_vector.size(); k++)
+        {
+          DeleteTile delete_tile = moving_head->tile_vector[k];
+          if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
+            continue;
+          }
+          else {
+            for (int l = 0; l < delete_tile.page_vector.size(); l++)
+            {
+              Page page = delete_tile.page_vector[l];
+              if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
+                continue;
+              }
+              else {
+                occurances++;
+              }
+            }
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+  }
+  std::cout << "(Range Lookup) Pages traversed : " << occurances << std::endl;
+}
+
+int DiskMetaFile::pointQuery (int key)
+{
+  int found = -1;
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      if (moving_head->min_sort_key <= key && key <= moving_head->max_sort_key) {
+        for (int k = 0; k < moving_head->tile_vector.size(); k++)
+        {
+          DeleteTile delete_tile = moving_head->tile_vector[k];
+          if (delete_tile.min_sort_key <= key && key <= delete_tile.max_sort_key) {
+            for (int l = 0; l < delete_tile.page_vector.size(); l++)
+            {
+              Page page = delete_tile.page_vector[l];
+              if (page.min_sort_key <= key && key <= page.max_sort_key) {
+                for (int m = 0; m < page.kv_vector.size(); m++) {
+                  if (key == page.kv_vector[m].first.first) {
+                    return l;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+  }
+  std::cout << "(Point Lookup) Found at : " << found << std::endl << std::endl;
+}
+
+int DiskMetaFile::checkDeleteCount (int deletekey)
+{
+  int complete_delete_count=0;
+  int not_possible_delete_count=0;
+  int partial_delete_count=0;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
+      {
+        DeleteTile delete_tile = moving_head->tile_vector[k];
+        for (int l = 0; l < delete_tile.page_vector.size(); l++)
+        {
+          Page page = delete_tile.page_vector[l];
+          if (page.max_delete_key < deletekey) {
+            complete_delete_count++;
+          }
+          else if (page.min_delete_key > deletekey) {
+            not_possible_delete_count++;
+          }
+          else {
+            partial_delete_count++;
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+
+  }
+  std::cout << "Compelte Possible Delete Count : " << complete_delete_count << std::endl;
+  std::cout << "Partial Possible Delete Count : " << partial_delete_count << std::endl;
+  std::cout << "Impossible Delete Count : " << not_possible_delete_count << std::endl;
+}
+
 // Class : WorkloadExecutor
 
 int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
@@ -638,6 +753,16 @@ int generateMetaData(SSTFile *file, DeleteTile &deletetile, Page &page, long sor
   {
     page.max_sort_key = sort_key_to_insert;
   }
+  if (page.min_delete_key < 0 || delete_key_to_insert < page.min_delete_key)
+  {
+    page.min_delete_key = delete_key_to_insert;
+  }
+
+  if (page.max_delete_key < 0 || delete_key_to_insert > page.max_delete_key)
+  {
+    page.max_delete_key = delete_key_to_insert;
+  }
+
   return 1;
 }
 
