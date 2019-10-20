@@ -53,7 +53,6 @@ int main(int argc, char *argvx[]) {
     WorkloadGenerator workload_generator;
     workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size);
 
-
     //int s = run_workload(read, pread, rread, write, update, del, skew, others); 
     int s = runWorkload(_env); 
     

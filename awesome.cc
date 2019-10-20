@@ -374,7 +374,7 @@ int compactAndFlush(vector<pair<pair<long, long>, string>> vector_to_compact, in
       vector_to_populate_file.push_back(vector_to_compact[j]);
     }
 
-    //if (MemoryBuffer::verbosity == 2)
+    if (MemoryBuffer::verbosity == 2)
     {
       std::cout << "\nprinting before trimming " << std::endl;
       for (int j = 0; j < vector_to_compact.size(); ++j)
@@ -747,33 +747,38 @@ int DiskMetaFile::printAllEntries()
   std::cout << "Entries per pages (B): " << _env->entries_per_page << std::endl;
   std::cout << "Entry Size (E): " << _env->entry_size << std::endl;
   std::cout << "Buffer Size (PBE): " << _env->buffer_size << std::endl;
+  std::cout << "Delete Tile Size in Pages (H): " << _env->delete_tile_size_in_pages << std::endl;
   std::cout << "Size Ratio: " << _env->size_ratio << std::endl;
 
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
     SSTFile *moving_head = level_i_head;
+
+    std::cout << "\033[1;31mLevel : " << i << "\033[0m" << std::endl;
     while (moving_head)
     {
       // std::cout << "File : " << j << " Min Sort Key : " << moving_head -> min_sort_key << " Max Sort Key : " << moving_head -> max_sort_key << std::endl;
       // std::cout << "File : " << j << " Min Delete Key : " << moving_head -> min_delete_key << " Max Delete Key : " << moving_head -> max_delete_key << std::endl;
+      std::cout << "\033[1;34m\tFile : " << moving_head->file_id << " (Min_Sort_Key : " << moving_head -> min_sort_key 
+      << ", Max_Sort_Key : " << moving_head -> max_sort_key << ", Min_Delete_Key : " << moving_head -> min_delete_key 
+      << ", Max_Delete_Key : " << moving_head -> max_delete_key << ")" << "\033[0m" << std::endl;
       for (int k = 0; k < moving_head->tile_vector.size(); k++)
       {
-
         DeleteTile delete_tile = moving_head->tile_vector[k];
-        // std::cout << "Delete Tile : " << k << " Min Sort Key : " << delete_tile.min_sort_key << " Max Sort Key : " << delete_tile.max_sort_key << std::endl;
-        // std::cout << "Delete Tile : " << k << " Min Delete Key : " << delete_tile.min_delete_key << " Max Delete Key : " << delete_tile.max_delete_key << std::endl;
+        std::cout << "\033[1;32m\t\tDelete Tile : " << k << " (Min_Sort_Key : " << delete_tile.min_sort_key 
+        << ", Max_Sort_Key : " << delete_tile.max_sort_key << ", Min_Delete_Key : " << delete_tile.min_delete_key 
+        << ", Max_Delete_Key : " << delete_tile.max_delete_key << ")" << "\033[0m" << std::endl;
         for (int l = 0; l < delete_tile.page_vector.size(); l++)
         {
           Page page = delete_tile.page_vector[l];
-          //std::cout << "Page : " << l << " Min Sort Key : " << page.min_sort_key << " Max Sort Key : " << page.max_sort_key << std::endl;
+          std::cout << "\033[1;33m\t\t\tPage : " << l << " (Min_Sort_Key : " << page.min_sort_key 
+          << ", Max_Sort_Key : " << page.max_sort_key << ")" << "\033[0m" << std::endl;
 
           for (int m = 0; m < page.kv_vector.size(); m++)
           {
-            std::cout << "Level : " << i << "\tFile: " << moving_head->file_id << "\t\tDelete tile : " << k << "\t\tPage : "
-                      << l << "\tSort Key: " << page.kv_vector[m].first.first
-                      << "\t\tDelete Key:   " << page.kv_vector[m].first.second << "\tValue: "
-                      << page.kv_vector[m].second << std::endl;
+            std::cout << "\t\t\t\tEntry : " << m << " (Sort_Key : " << page.kv_vector[m].first.first
+            << ", Delete_Key : " << page.kv_vector[m].first.second << ")" << std::endl;
           }
         }
       }
