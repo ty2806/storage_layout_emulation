@@ -519,7 +519,7 @@ int DiskMetaFile::rangeQuery (int lowerlimit, int upperlimit) {
       moving_head = moving_head->next_file_ptr;
     }
   }
-  std::cout << "(Range Lookup) Pages traversed : " << occurances << std::endl;
+  std::cout << "(Range Lookup) Pages traversed : " << occurances << std::endl << std::endl;
 }
 
 int DiskMetaFile::pointQuery (int key)
@@ -542,7 +542,7 @@ int DiskMetaFile::pointQuery (int key)
               if (page.min_sort_key <= key && key <= page.max_sort_key) {
                 for (int m = 0; m < page.kv_vector.size(); m++) {
                   if (key == page.kv_vector[m].first.first) {
-                    return l;
+                    return l + 1;
                   }
                 }
               }
@@ -553,7 +553,7 @@ int DiskMetaFile::pointQuery (int key)
       moving_head = moving_head->next_file_ptr;
     }
   }
-  std::cout << "(Point Lookup) Found at : " << found << std::endl << std::endl;
+  return found;
 }
 
 int DiskMetaFile::checkDeleteCount (int deletekey)

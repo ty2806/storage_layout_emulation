@@ -61,9 +61,32 @@ int main(int argc, char *argvx[]) {
     DiskMetaFile::getMetaStatistics();
     std::cout << std::endl;
     DiskMetaFile::checkDeleteCount(700);
-    DiskMetaFile::pointQuery (540);
+    //std::cout << "\n(Point Lookup) Found at : " << DiskMetaFile::pointQuery(540) << std::endl << std::endl;
     DiskMetaFile::rangeQuery(2000,5000);
-    
+
+    //srand(time(0));
+    long sumPageId = 0;
+    long foundCount = 0;
+    long notFoundCount = 0;
+
+    for (int i = 0; i < 100000 ; i++) {
+      unsigned long long randomKey = rand() %  100000;
+      //std::cout << "Generated Random Key" << randomKey << std::endl;
+      int pageId = DiskMetaFile::pointQuery(randomKey);
+      if(pageId < 0) {
+        notFoundCount++;
+      }
+      else {
+        //cout << pageId << endl;
+        sumPageId += pageId;
+        foundCount++;
+      }
+    }
+    std::cout << "Total sum of found pageIDs : " <<  sumPageId << std::endl;
+    std::cout << "Total number of found pageIDs : " <<  foundCount << std::endl;
+    std::cout << "Total number of found average pageIDs : " <<  sumPageId/(foundCount * 1.0) << std::endl;
+    std::cout << "Total number of not found pages : " <<  notFoundCount << std::endl;
+  
     //WorkloadExecutor::getWorkloadStatictics(_env);
 
     //assert(_env->num_inserts == inserted); 
