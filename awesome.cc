@@ -914,7 +914,7 @@ int DiskMetaFile::printAllEntries()
         {
           Page page = delete_tile.page_vector[l];
           std::cout << "\033[1;33m\t\t\tPage : " << l << " (Min_Sort_Key : " << page.min_sort_key
-                    << ", Max_Sort_Key : " << page.max_sort_key << ")"
+                    << ", Max_Sort_Key : " << page.max_sort_key << ", Min_Delete_Key : " << page.min_delete_key << ", Max_Delete_Key : " << page.max_delete_key << ")"
                     << "\033[0m" << std::endl;
 
           for (int m = 0; m < page.kv_vector.size(); m++)
