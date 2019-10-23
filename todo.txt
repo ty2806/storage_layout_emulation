@@ -1,0 +1,3 @@
+- Make the code more structured. Use OOP.
+- While compacting, check overlapping.
+- Make a version for tiered LSM tree?
