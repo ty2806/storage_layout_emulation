@@ -16,6 +16,7 @@
 #include "emu_environment.h"
 #include "awesome.h"
 #include "workload_generator.h"
+#include "query_runner.h"
 
 using namespace std;
 using namespace awesome;
@@ -56,14 +57,14 @@ int main(int argc, char *argvx[]) {
     //int s = run_workload(read, pread, rread, write, update, del, skew, others); 
     int s = runWorkload(_env); 
     
-    DiskMetaFile::printAllEntries();
+    //DiskMetaFile::printAllEntries();
     MemoryBuffer::getCurrentBufferStatistics();
     DiskMetaFile::getMetaStatistics();
     std::cout << std::endl;
-    DiskMetaFile::checkDeleteCount(700);
+    Query::checkDeleteCount(700);
     //std::cout << "\n(Point Lookup) Found at : " << DiskMetaFile::pointQuery(540) << std::endl << std::endl;
-    DiskMetaFile::rangeQuery(2000,5000);
-    DiskMetaFile::secondaryRangeQuery(200,500);
+    Query::rangeQuery(2000,5000);
+    Query::secondaryRangeQuery(200,500);
 
     //srand(time(0));
     long sumPageId = 0;
@@ -73,7 +74,7 @@ int main(int argc, char *argvx[]) {
     for (int i = 0; i < 100000 ; i++) {
       unsigned long long randomKey = rand() %  100000;
       //std::cout << "Generated Random Key" << randomKey << std::endl;
-      int pageId = DiskMetaFile::pointQuery(randomKey);
+      int pageId = Query::pointQuery(randomKey);
       if(pageId < 0) {
         notFoundCount++;
       }
@@ -83,6 +84,7 @@ int main(int argc, char *argvx[]) {
         foundCount++;
       }
     }
+
     std::cout << "Total sum of found pageIDs : " <<  sumPageId << std::endl;
     std::cout << "Total number of found pageIDs : " <<  foundCount << std::endl;
     std::cout << "Total number of found average pageIDs : " <<  sumPageId/(foundCount * 1.0) << std::endl;

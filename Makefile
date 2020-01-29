@@ -18,8 +18,8 @@ all: emu_runner
 # $(info PRINT FLAGS $(CFLAGS))
 
 
-emu_runner: emu_runner.cc emu_environment.cc awesome.cc workload_generator.cc
-	$(CXX) $(CXX_FLAGS)  $@.cc -o$@ emu_environment.cc awesome.cc workload_generator.cc
+emu_runner: emu_runner.cc emu_environment.cc awesome.cc workload_generator.cc query_runner.cc
+	$(CXX) $(CXX_FLAGS)  $@.cc -o$@ emu_environment.cc awesome.cc workload_generator.cc query_runner.cc
 
 clean:
 	rm -rf emu_runner  
