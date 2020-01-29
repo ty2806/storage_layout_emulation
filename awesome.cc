@@ -360,7 +360,7 @@ SSTFile *SSTFile::createNewSSTFile(int level_to_flush_in)
   return new_file;
 }
 
-int compactAndFlush(vector<pair<pair<long, long>, string>> vector_to_compact, int level_to_flush_in)
+int compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
@@ -419,9 +419,8 @@ int compactAndFlush(vector<pair<pair<long, long>, string>> vector_to_compact, in
   }
 }
 
-int sortAndWrite(vector<pair<pair<long, long>, string>> vector_to_compact, int level_to_flush_in)
+int sortAndWrite(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
-
   EmuEnv *_env = EmuEnv::getInstance();
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
   int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
@@ -522,9 +521,49 @@ int DiskMetaFile::rangeQuery (int lowerlimit, int upperlimit) {
   std::cout << "(Range Lookup) Pages traversed : " << occurances << std::endl << std::endl;
 }
 
+int DiskMetaFile::secondaryRangeQuery (int lowerlimit, int upperlimit) {
+
+  int occurances = 0;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      if (moving_head->min_delete_key > upperlimit || moving_head->max_delete_key < lowerlimit ) {
+        moving_head = moving_head->next_file_ptr;
+        continue;
+      } 
+      else {
+        for (int k = 0; k < moving_head->tile_vector.size(); k++)
+        {
+          DeleteTile delete_tile = moving_head->tile_vector[k];
+          if (delete_tile.min_delete_key > upperlimit || delete_tile.max_delete_key < lowerlimit) {
+            continue;
+          }
+          else {
+            for (int l = 0; l < delete_tile.page_vector.size(); l++)
+            {
+              Page page = delete_tile.page_vector[l];
+              if (page.min_delete_key > upperlimit || page.max_delete_key < lowerlimit) {
+                continue;
+              }
+              else {
+                occurances++;
+              }
+            }
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+  }
+  std::cout << "(Secondary Range Lookup) Pages traversed : " << occurances << std::endl << std::endl;
+}
+
 int DiskMetaFile::pointQuery (int key)
 {
-  int found = -1;
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
@@ -553,7 +592,7 @@ int DiskMetaFile::pointQuery (int key)
       moving_head = moving_head->next_file_ptr;
     }
   }
-  return found;
+  return -1;
 }
 
 int DiskMetaFile::checkDeleteCount (int deletekey)

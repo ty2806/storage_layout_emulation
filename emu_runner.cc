@@ -63,6 +63,7 @@ int main(int argc, char *argvx[]) {
     DiskMetaFile::checkDeleteCount(700);
     //std::cout << "\n(Point Lookup) Found at : " << DiskMetaFile::pointQuery(540) << std::endl << std::endl;
     DiskMetaFile::rangeQuery(2000,5000);
+    DiskMetaFile::secondaryRangeQuery(200,500);
 
     //srand(time(0));
     long sumPageId = 0;
