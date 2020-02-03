@@ -173,7 +173,7 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
     DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
 
     //Converting to vector (only the first file)
-    vector<pair<pair<long, long>, string>> vector_to_compact;
+    vector < pair < pair < long, long >, string > > vector_to_compact;
 
     for (int k = 0; k < level_head->tile_vector.size(); k++)
     {

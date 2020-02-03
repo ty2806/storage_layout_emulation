@@ -44,7 +44,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
     std::cout << "\nwriting " << file_count << " file(s)\n";
   for (int i = 0; i < file_count; i++)
   {
-    vector<pair<pair<long, long>, string>> vector_to_populate_file;
+    vector < pair < pair < long, long >, string > > vector_to_populate_file;
     for (int j = 0; j < entries_per_file; ++j)
     {
       vector_to_populate_file.push_back(vector_to_compact[j]);
@@ -99,12 +99,11 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
   int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
 
+  std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
   if (!head_level_1)
   {
     if (MemoryBuffer::verbosity == 2)
       std::cout << "NULL" << std::endl;
-
-    std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
     if (vector_to_compact.size() % _env->delete_tile_size_in_pages != 0 && vector_to_compact.size() / _env->delete_tile_size_in_pages < 1)
     {
       std::cout << " ERROR " << std::endl;
@@ -125,7 +124,7 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
 
     if (MemoryBuffer::verbosity == 2)
       std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
-
+    
     while (moving_head)
     {
       for (int k = 0; k < moving_head->tile_vector.size(); k++)
