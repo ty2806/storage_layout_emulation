@@ -14,12 +14,14 @@
 
 #include "args.hxx"
 #include "emu_environment.h"
-#include "awesome.h"
+#include "tree_builder.h"
+#include "workload_executor.h"
 #include "workload_generator.h"
 #include "query_runner.h"
 
 using namespace std;
-using namespace awesome;
+using namespace tree_builder;
+using namespace workload_exec;
 
 /*
  * DECLARATIONS
@@ -55,43 +57,23 @@ int main(int argc, char *argvx[]) {
     workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size);
 
     //int s = run_workload(read, pread, rread, write, update, del, skew, others); 
-    int s = runWorkload(_env); 
-    
-    //DiskMetaFile::printAllEntries();
+    int s = runWorkload(_env);
+
+    int only_file_meta_data = 1;
+    DiskMetaFile::printAllEntries(only_file_meta_data);
     MemoryBuffer::getCurrentBufferStatistics();
     DiskMetaFile::getMetaStatistics();
+
+    int iterations_point_query = 100000;
     std::cout << std::endl;
     Query::checkDeleteCount(700);
     //std::cout << "\n(Point Lookup) Found at : " << DiskMetaFile::pointQuery(540) << std::endl << std::endl;
     Query::rangeQuery(2000,5000);
     Query::secondaryRangeQuery(200,500);
+    Query::pointQueryRunner(iterations_point_query);
 
     //srand(time(0));
-    long sumPageId = 0;
-    long foundCount = 0;
-    long notFoundCount = 0;
-
-    for (int i = 0; i < 100000 ; i++) {
-      unsigned long long randomKey = rand() %  100000;
-      //std::cout << "Generated Random Key" << randomKey << std::endl;
-      int pageId = Query::pointQuery(randomKey);
-      if(pageId < 0) {
-        notFoundCount++;
-      }
-      else {
-        //cout << pageId << endl;
-        sumPageId += pageId;
-        foundCount++;
-      }
-    }
-
-    std::cout << "Total sum of found pageIDs : " <<  sumPageId << std::endl;
-    std::cout << "Total number of found pageIDs : " <<  foundCount << std::endl;
-    std::cout << "Total number of found average pageIDs : " <<  sumPageId/(foundCount * 1.0) << std::endl;
-    std::cout << "Total number of not found pages : " <<  notFoundCount << std::endl;
-  
     //WorkloadExecutor::getWorkloadStatictics(_env);
-
     //assert(_env->num_inserts == inserted); 
   }
 
@@ -100,18 +82,10 @@ int main(int argc, char *argvx[]) {
   return 0;
 }
 
-
-/*
- * DEFINITIONS 
- * 
- */
-
 int runWorkload(EmuEnv* _env) {
 
   MemoryBuffer* buffer_instance = MemoryBuffer::getBufferInstance(_env);
-
-
-  awesome::WorkloadExecutor workload_executer;
+  WorkloadExecutor workload_executer;
   // reading from file
   ifstream workload_file;
   workload_file.open("workload.txt");

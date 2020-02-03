@@ -7,11 +7,56 @@
 #include <iomanip>
 
 #include "emu_environment.h"
-#include "awesome.h"
 #include "query_runner.h"
+#include "tree_builder.h"
+#include "workload_generator.h"
+
 
 using namespace std;
-using namespace awesome;
+using namespace tree_builder;
+
+
+int Query::checkDeleteCount (int deletekey)
+{
+  int complete_delete_count=0;
+  int not_possible_delete_count=0;
+  int partial_delete_count=0;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
+      {
+        DeleteTile delete_tile = moving_head->tile_vector[k];
+        for (int l = 0; l < delete_tile.page_vector.size(); l++)
+        {
+          Page page = delete_tile.page_vector[l];
+          if (page.max_delete_key < deletekey) {
+            complete_delete_count++;
+          }
+          else if (page.min_delete_key > deletekey) {
+            not_possible_delete_count++;
+          }
+          else {
+            partial_delete_count++;
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+
+  }
+  std::cout << "(Delete Query)" << std::endl;
+  std::cout << "Compelte Possible Delete Count : " << complete_delete_count << std::endl;
+  std::cout << "Partial Possible Delete Count : " << partial_delete_count << std::endl;
+  std::cout << "Impossible Delete Count : " << not_possible_delete_count << std::endl;
+  std::cout << std::endl;
+}
+
+
 
 int Query::rangeQuery (int lowerlimit, int upperlimit) {
 
@@ -51,7 +96,8 @@ int Query::rangeQuery (int lowerlimit, int upperlimit) {
       moving_head = moving_head->next_file_ptr;
     }
   }
-  std::cout << "(Range Lookup) Pages traversed : " << occurances << std::endl << std::endl;
+  std::cout << "(Range Query)" << std::endl;
+  std::cout << "Pages traversed : " << occurances << std::endl << std::endl;
 }
 
 int Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
@@ -92,7 +138,8 @@ int Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
       moving_head = moving_head->next_file_ptr;
     }
   }
-  std::cout << "(Secondary Range Lookup) Pages traversed : " << occurances << std::endl << std::endl;
+  std::cout << "(Secondary Range Query)" << std::endl;
+  std::cout << "Pages traversed : " << occurances << std::endl << std::endl;
 }
 
 int Query::pointQuery (int key)
@@ -128,40 +175,30 @@ int Query::pointQuery (int key)
   return -1;
 }
 
-int Query::checkDeleteCount (int deletekey)
+int Query::pointQueryRunner (int iterations)
 {
-  int complete_delete_count=0;
-  int not_possible_delete_count=0;
-  int partial_delete_count=0;
-
-  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
-  {
-    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
-    SSTFile *moving_head = level_i_head;
-    while (moving_head)
+  long sumPageId = 0;
+  long foundCount = 0;
+  long notFoundCount = 0;
+  for (int i = 0; i < iterations ; i++) {
+    unsigned long long randomKey = rand() %  WorkloadGenerator::KEY_DOMAIN_SIZE;
+    //std::cout << "Generated Random Key" << randomKey << std::endl;
+    int pageId = Query::pointQuery(randomKey);
+    if(pageId < 0) 
     {
-      for (int k = 0; k < moving_head->tile_vector.size(); k++)
-      {
-        DeleteTile delete_tile = moving_head->tile_vector[k];
-        for (int l = 0; l < delete_tile.page_vector.size(); l++)
-        {
-          Page page = delete_tile.page_vector[l];
-          if (page.max_delete_key < deletekey) {
-            complete_delete_count++;
-          }
-          else if (page.min_delete_key > deletekey) {
-            not_possible_delete_count++;
-          }
-          else {
-            partial_delete_count++;
-          }
-        }
-      }
-      moving_head = moving_head->next_file_ptr;
+      notFoundCount++;
     }
-
+    else 
+    {
+      //cout << pageId << endl;
+      sumPageId += pageId;
+      foundCount++;
+    }
   }
-  std::cout << "Compelte Possible Delete Count : " << complete_delete_count << std::endl;
-  std::cout << "Partial Possible Delete Count : " << partial_delete_count << std::endl;
-  std::cout << "Impossible Delete Count : " << not_possible_delete_count << std::endl;
+    std::cout << "(Point Query)" << std::endl;
+    std::cout << "Total sum of found pageIDs : " <<  sumPageId << std::endl;
+    std::cout << "Total number of found pageIDs : " <<  foundCount << std::endl;
+    std::cout << "Total number of found average pageIDs : " <<  sumPageId/(foundCount * 1.0) << std::endl;
+    std::cout << "Total number of not found pages : " <<  notFoundCount << std::endl << std::endl;
 }
+

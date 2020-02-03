@@ -17,6 +17,7 @@ public:
 
     static int checkDeleteCount (int deletekey);
     static int pointQuery (int key);
+    static int pointQueryRunner (int iterations);
     static int rangeQuery (int lowerlimit, int upperlimit);
     static int secondaryRangeQuery (int lowerlimit, int upperlimit);
 
