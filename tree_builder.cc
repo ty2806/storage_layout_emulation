@@ -96,6 +96,8 @@ int MemoryBuffer::getCurrentBufferStatistics()
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
 {
   int entries_per_file = MemoryBuffer::current_buffer_entry_count;
+  if (MemoryBuffer::verbosity == 2)
+    cout << "Calling sort and write from Buffer............................" << endl;
   Utility::sortAndWrite(MemoryBuffer::buffer, level_to_flush_in);
   MemoryBuffer::buffer_flush_count++;
   return 1;
@@ -158,21 +160,79 @@ int DiskMetaFile::getTotalLevelCount()
   }
 }
 
+int DiskMetaFile::checkOverlapping(SSTFile *file, int level)
+{
+  SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level);
+  SSTFile *moving_head = head_level_1;
+  int overlap_count = 0;
+  while (moving_head)
+  {
+    if (moving_head->max_sort_key <= file->min_sort_key || moving_head->min_sort_key >= file->max_sort_key)
+    {
+      moving_head = moving_head->next_file_ptr;
+      continue;
+    }
+    overlap_count++;
+    moving_head = moving_head->next_file_ptr;
+  }
+  return overlap_count;
+}
+
 int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
 {
   int entry_count_in_level = getLevelEntryCount(level);
+  if (MemoryBuffer::verbosity == 2)
+    cout << "Level: " << level << " Entry count : " << entry_count_in_level << endl;
   EmuEnv *_env = EmuEnv::getInstance();
   int max_entry_count_in_level = DiskMetaFile::level_max_size[level] / _env->entry_size;
+  if (MemoryBuffer::verbosity == 2)
+    cout << "Level: " << level << " Max Entry count : " << max_entry_count_in_level << endl;
   if (entry_count_in_level >= max_entry_count_in_level)
   {
     if (MemoryBuffer::verbosity == 2)
       std::cout << "Saturation Reached......" << endl;
-    //Push the first file into the next level
-    //Setting current level's head to the second file
+    
+    //Push the file with minimum overlapping into the next level
     SSTFile *level_head = DiskMetaFile::getSSTFileHead(level);
+    SSTFile *moving_head = level_head;
+    //SSTFile *moving_head_prev = level_head;
+    SSTFile *min_overlap_file = level_head;
+    int overlap;
+    int min_overlap = INT32_MAX;
+    //cout << "Level: " << level << " Overlap Count : " << endl;
+    while (moving_head)
+    {
+      overlap = DiskMetaFile::checkOverlapping(moving_head, level + 1);
+      //cout << overlap << endl;
+      if (overlap < min_overlap)
+      {
+        min_overlap = overlap;
+        min_overlap_file = moving_head;
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+
     DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
 
-    //Converting to vector (only the first file)
+    //If that file is level head, update head
+    // if (min_overlap_file == DiskMetaFile::getSSTFileHead(level))
+    // {
+    //   DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
+    // }
+
+    // moving_head = level_head;
+    // //moving_head_prev = level_head;
+
+    // while (moving_head)
+    // {
+    //   if (moving_head->next_file_ptr == min_overlap_file)
+    //   {
+    //     moving_head->next_file_ptr = min_overlap_file->next_file_ptr;
+    //   }
+    //   moving_head = moving_head->next_file_ptr;
+    // }
+
+    //Converting to vector (only that file)
     vector < pair < pair < long, long >, string > > vector_to_compact;
 
     for (int k = 0; k < level_head->tile_vector.size(); k++)
@@ -188,7 +248,16 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
       }
     }
     //Sending it to next level.
+    if (MemoryBuffer::verbosity == 2)
+    {
+      cout << "Level : " << level << " Calling sort and write from Disk Saturation Checker............................" << endl;
+      for (int j = 0; j < vector_to_compact.size(); ++j)
+        std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
+                  << "\t" << std::endl;
+    }
+
     Utility::sortAndWrite(vector_to_compact, level + 1);
+
   }
   else
   {
@@ -285,7 +354,7 @@ int SSTFile::PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> 
     //   std::cout << "< " << vector_to_populate_file[j].first.first << ",  " << vector_to_populate_file[j].first.second << " >" << "\t";
     if (MemoryBuffer::verbosity == 2)
       std::cout << "populating delete tile ... \n";
-      int status = SSTFile::PopulateDeleteTile(file, vector_to_populate_tile, i, level_to_flush_in);
+    int status = SSTFile::PopulateDeleteTile(file, vector_to_populate_tile, i, level_to_flush_in);
     vector_to_populate_tile.clear();
   }
   return 1;

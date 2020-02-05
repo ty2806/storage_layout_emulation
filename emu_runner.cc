@@ -67,7 +67,7 @@ int main(int argc, char *argvx[]) {
     int iterations_point_query = 100000;
     std::cout << std::endl;
     Query::checkDeleteCount(700);
-    //std::cout << "\n(Point Lookup) Found at : " << DiskMetaFile::pointQuery(540) << std::endl << std::endl;
+  
     Query::rangeQuery(2000,5000);
     Query::secondaryRangeQuery(200,500);
     Query::pointQueryRunner(iterations_point_query);
