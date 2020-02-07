@@ -45,7 +45,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
 
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
   SSTFile *moving_head = head_level_1;
-  SSTFile *moving_head_prev = head_level_1;
+  SSTFile *moving_head_prev = head_level_1;   //Need this to overwrite current overlapping file
   SSTFile *end_ptr = moving_head;
 
   if (!head_level_1)
@@ -89,10 +89,11 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
         moving_head = moving_head->next_file_ptr;
         continue;
       }
+      end_ptr = moving_head;  // Need to assign this in case vector gets inserted in between with no overlapping
       if (moving_head->min_sort_key >= vector_to_compact[vector_to_compact.size() - 1].first.first )
       {
-        moving_head = moving_head->next_file_ptr;
-        continue;
+        //safe to say we have calculated end pointer
+        break;
       }
       end_ptr = moving_head->next_file_ptr;
       moving_head = moving_head->next_file_ptr;
@@ -102,7 +103,8 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
       cout << "Calculated end pointer" << endl;
     
     moving_head = head_level_1;
-    int flag = 0; //1 means vector to be appended at the begining
+    int flag = 0; //1 means vector to be appended at the begining or vector to be inserted in between two files (NO OVERLAPPING); 2 means not possible to be head; 0 means overlapping
+    int hasHeadChanged = 0;  //head?
 
     while (moving_head)
     {
@@ -122,7 +124,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
       //   cout << "End max: " << end_ptr->max_sort_key << endl;
       if (moving_head->min_sort_key >= vector_to_compact[vector_to_compact.size()-1].first.first)
       {
-        flag = 1; //vector to be appended very begining
+        flag = 1; //vector to be appended very begining or vector to be inserted in between with no overlapping
       }
 
       for (int i = 0; i < file_count; i++)
@@ -153,15 +155,22 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
           std::cout << "\npopulating file " << head_level_1 << std::endl;
 
         SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
+        int status = SSTFile::PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
+        new_file->next_file_ptr = end_ptr;
         //SSTFile *moving_head = head_level_1;
+
         if (moving_head == DiskMetaFile::getSSTFileHead(level_to_flush_in) && i==0 && flag!=2)    //Further Optimize?
         {
           DiskMetaFile::setSSTFileHead(new_file, level_to_flush_in);
+          hasHeadChanged = 1;
         }
 
-        int status = SSTFile::PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
-        new_file->next_file_ptr = end_ptr;
-        if (flag == 0 || flag == 2)
+        if (flag == 1 && hasHeadChanged == 0)   //This means file to be inserted in between with no overlapping
+        {
+          moving_head_prev->next_file_ptr = new_file;
+        }
+
+        if (flag != 1)
         {
           moving_head_prev->next_file_ptr = new_file;
           moving_head_prev = new_file;
@@ -240,18 +249,20 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
     int file_count = vector_to_compact.size() / entries_per_file;
     
-    if (MemoryBuffer::verbosity == 2)
+    if (MemoryBuffer::verbosity == 2)   //UNCOMMENT
     {
       std::cout << "\nprinting before compacting " << std::endl;
       for (int j = 0; j < vector_to_compact.size(); ++j)
+      {
         std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
                   << "\t" << std::endl;
+        if (j%8 == 7) cout << std::endl;
+      }
     }
     
     compactAndFlush(vector_to_compact, level_to_flush_in);
   }
   int saturation = DiskMetaFile::checkAndAdjustLevelSaturation(level_to_flush_in);
-  //DiskMetaFile::printAllEntries(0);
 }
 
 // Class : WorkloadExecutor
@@ -295,13 +306,12 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
     // if(MemoryBuffer::verbosity == 2)
     //std::cout << "Buffer full :: Sorting buffer " ;
 
-    if (MemoryBuffer::verbosity == 2)
+    if (MemoryBuffer::verbosity == 2)       //UNCOMMENT
     {
       std::cout << ":::: Buffer full :: Flushing buffer to Level 1 " << std::endl;
       MemoryBuffer::printBufferEntries();
     }
-
-    //std::sort( MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end() );
+    
     int status = MemoryBuffer::initiateBufferFlush(1);
     if (status)
     {

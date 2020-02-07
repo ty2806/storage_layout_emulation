@@ -95,6 +95,7 @@ int MemoryBuffer::getCurrentBufferStatistics()
 
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
 {
+  //DiskMetaFile::printAllEntries(1);
   int entries_per_file = MemoryBuffer::current_buffer_entry_count;
   if (MemoryBuffer::verbosity == 2)
     cout << "Calling sort and write from Buffer............................" << endl;
@@ -212,32 +213,32 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
       moving_head = moving_head->next_file_ptr;
     }
 
-    DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
+    //DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
 
     //If that file is level head, update head
-    // if (min_overlap_file == DiskMetaFile::getSSTFileHead(level))
-    // {
-    //   DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
-    // }
+    if (min_overlap_file == DiskMetaFile::getSSTFileHead(level))
+    {
+      DiskMetaFile::setSSTFileHead(level_head->next_file_ptr, level);
+    }
 
-    // moving_head = level_head;
-    // //moving_head_prev = level_head;
+    moving_head = level_head;
+    //moving_head_prev = level_head;
 
-    // while (moving_head)
-    // {
-    //   if (moving_head->next_file_ptr == min_overlap_file)
-    //   {
-    //     moving_head->next_file_ptr = min_overlap_file->next_file_ptr;
-    //   }
-    //   moving_head = moving_head->next_file_ptr;
-    // }
+    while (moving_head)
+    {
+      if (moving_head->next_file_ptr == min_overlap_file)
+      {
+        moving_head->next_file_ptr = min_overlap_file->next_file_ptr;
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
 
     //Converting to vector (only that file)
     vector < pair < pair < long, long >, string > > vector_to_compact;
 
-    for (int k = 0; k < level_head->tile_vector.size(); k++)
+    for (int k = 0; k < min_overlap_file->tile_vector.size(); k++)
     {
-      DeleteTile delete_tile = level_head->tile_vector[k];
+      DeleteTile delete_tile = min_overlap_file->tile_vector[k];
       for (int l = 0; l < delete_tile.page_vector.size(); l++)
       {
         Page page = delete_tile.page_vector[l];
@@ -247,6 +248,7 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
         }
       }
     }
+
     //Sending it to next level.
     if (MemoryBuffer::verbosity == 2)
     {
@@ -489,6 +491,7 @@ int MemoryBuffer::printBufferEntries()
   long size = 0;
   std::cout << "Printing sorted buffer (only keys): ";
   //std::cout << MemoryBuffer::buffer.size() << std::endl;
+  //std::sort(MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end(), Utility::sortbysortkey);    //COMMENT
   for (int i = 0; i < MemoryBuffer::buffer.size(); ++i)
   {
     std::cout << "< " << MemoryBuffer::buffer[i].first.first << ",  " << MemoryBuffer::buffer[i].first.second << " >"
