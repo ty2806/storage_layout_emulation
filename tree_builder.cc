@@ -517,7 +517,7 @@ int DiskMetaFile::getMetaStatistics()
     total_entry_count += DiskMetaFile::getLevelEntryCount(i);
   }
   std::cout << "\nTotal number of entries: " << total_entry_count << "\n" << std::endl;
-  std::cout << "L\tfile_count\tentry_count\t" << std::endl;
+  std::cout << "L\tfile_count\tentry_count\t " << std::endl;
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
     std::cout << i << "\t" << setfill(' ') << setw(8) << DiskMetaFile::getLevelFileCount(i) << "\t\t"
