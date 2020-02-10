@@ -34,12 +34,22 @@ bool Utility::sortbydeletekey(const pair<pair<long, long>, string> &a, const pai
   return (a.first.second < b.first.second);
 }
 
+int Utility::minInt(int a, int b)
+{
+  if (a <= b)
+    return a;
+  else
+  {
+    return b;
+  }
+}
+
 int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
   
   int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
-  int file_count = vector_to_compact.size() / entries_per_file;
+  int file_count = ceil(vector_to_compact.size() / (entries_per_file*1.0));
   if (MemoryBuffer::verbosity == 2)
     std::cout << "\nwriting " << file_count << " file(s)\n";
 
@@ -53,6 +63,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
     for (int i = 0; i < file_count; i++)
     {
       vector<pair<pair<long, long>, string>> vector_to_populate_file;
+      entries_per_file = Utility::minInt(entries_per_file, vector_to_compact.size());
       for (int j = 0; j < entries_per_file; ++j)
       {
         vector_to_populate_file.push_back(vector_to_compact[j]);
@@ -126,10 +137,11 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
       {
         flag = 1; //vector to be appended very begining or vector to be inserted in between with no overlapping
       }
-
+      //std::cout << "\nFile Count: " << file_count << std::endl; 
       for (int i = 0; i < file_count; i++)
       {
         vector<pair<pair<long, long>, string>> vector_to_populate_file;
+        entries_per_file = Utility::minInt(entries_per_file, vector_to_compact.size());
         for (int j = 0; j < entries_per_file; ++j)
         {
           vector_to_populate_file.push_back(vector_to_compact[j]);
@@ -152,7 +164,16 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
                       << "\t";
         }
         if (MemoryBuffer::verbosity == 2)
+        {
           std::cout << "\npopulating file " << head_level_1 << std::endl;
+          std::cout << "Vector to populate file: " << endl;
+          for (int j = 0; j < vector_to_populate_file.size(); ++j)
+            std::cout << "< " << vector_to_populate_file[j].first.first << ",  " << vector_to_populate_file[j].first.second << " >"
+                      << "\t";
+        }
+          
+        
+        
 
         SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
         int status = SSTFile::PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
@@ -214,6 +235,7 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
       std::cout << "head not null anymore" << std::endl;
     SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
     SSTFile *moving_head = head_level_1;
+    int match = 0;
 
     if (MemoryBuffer::verbosity == 2)
       std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
@@ -222,11 +244,10 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
     {
       if (moving_head->min_sort_key >= endval || moving_head->max_sort_key <= startval )
       {
-        if (MemoryBuffer::verbosity == 2)
-          cout << "Performed Optimization" << endl;
         moving_head = moving_head->next_file_ptr;
         continue;
       }
+      //cout << "Performed Optimization :: Overlap FOUND" << endl;
       
       for (int k = 0; k < moving_head->tile_vector.size(); k++)
       {
@@ -236,7 +257,15 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
           Page page = delete_tile.page_vector[l];
           for (int m = 0; m < page.kv_vector.size(); m++)
           {
-            vector_to_compact.push_back(page.kv_vector[m]);
+            for(int p = 0; p < vector_to_compact.size(); p++) {
+              if (vector_to_compact[p].first.first == page.kv_vector[m].first.first) {
+                match++;
+              }
+            }
+            if (match == 0)
+              vector_to_compact.push_back(page.kv_vector[m]);
+            else 
+              match = 0;
           }
         }
       }
@@ -249,7 +278,7 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
     int file_count = vector_to_compact.size() / entries_per_file;
     
-    if (MemoryBuffer::verbosity == 2)   //UNCOMMENT
+    if (MemoryBuffer::verbosity == 1)   //UNCOMMENT
     {
       std::cout << "\nprinting before compacting " << std::endl;
       for (int j = 0; j < vector_to_compact.size(); ++j)
@@ -306,12 +335,14 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
     // if(MemoryBuffer::verbosity == 2)
     //std::cout << "Buffer full :: Sorting buffer " ;
 
-    if (MemoryBuffer::verbosity == 2)       //UNCOMMENT
+    //DiskMetaFile::printAllEntries(0);     //Comment
+
+    if (MemoryBuffer::verbosity == 1)
     {
       std::cout << ":::: Buffer full :: Flushing buffer to Level 1 " << std::endl;
       MemoryBuffer::printBufferEntries();
     }
-    
+
     int status = MemoryBuffer::initiateBufferFlush(1);
     if (status)
     {

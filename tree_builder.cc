@@ -38,6 +38,7 @@ long DiskMetaFile::level_max_key[32] = {};
 long DiskMetaFile::level_file_count[32] = {};
 long DiskMetaFile::level_entry_count[32] = {};
 long DiskMetaFile::level_max_size[32] = {};
+long DiskMetaFile::level_max_file_count[32] = {};
 long DiskMetaFile::level_current_size[32] = {};
 
 long DiskMetaFile::global_level_file_counter[32] = {};
@@ -57,11 +58,13 @@ MemoryBuffer::MemoryBuffer(EmuEnv *_env)
   max_buffer_size = _env->buffer_size;
   buffer_flush_threshold = _env->buffer_flush_threshold;
   verbosity = _env->verbosity;
+  int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
 
   for (int i = 1; i < 32; ++i)
   {
     DiskMetaFile::disk_run_flush_threshold[i] = _env->disk_run_flush_threshold;
     DiskMetaFile::level_max_size[i] = _env->buffer_size * pow(_env->size_ratio, i);
+    DiskMetaFile::level_max_file_count[i] = DiskMetaFile::level_max_size[i]/(entries_per_file*_env->entry_size);
   }
 }
 
@@ -95,8 +98,6 @@ int MemoryBuffer::getCurrentBufferStatistics()
 
 int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
 {
-  //DiskMetaFile::printAllEntries(1);
-  int entries_per_file = MemoryBuffer::current_buffer_entry_count;
   if (MemoryBuffer::verbosity == 2)
     cout << "Calling sort and write from Buffer............................" << endl;
   Utility::sortAndWrite(MemoryBuffer::buffer, level_to_flush_in);
@@ -182,13 +183,11 @@ int DiskMetaFile::checkOverlapping(SSTFile *file, int level)
 int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
 {
   int entry_count_in_level = getLevelEntryCount(level);
-  if (MemoryBuffer::verbosity == 2)
-    cout << "Level: " << level << " Entry count : " << entry_count_in_level << endl;
+  int file_count_in_level = getLevelFileCount(level);
   EmuEnv *_env = EmuEnv::getInstance();
   int max_entry_count_in_level = DiskMetaFile::level_max_size[level] / _env->entry_size;
-  if (MemoryBuffer::verbosity == 2)
-    cout << "Level: " << level << " Max Entry count : " << max_entry_count_in_level << endl;
-  if (entry_count_in_level >= max_entry_count_in_level)
+  int max_file_count_in_level = DiskMetaFile::level_max_file_count[level];
+  if (file_count_in_level >= max_file_count_in_level)
   {
     if (MemoryBuffer::verbosity == 2)
       std::cout << "Saturation Reached......" << endl;
@@ -287,10 +286,12 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
 
   EmuEnv *_env = EmuEnv::getInstance();
   int page_count = _env->delete_tile_size_in_pages;
+  int entries_per_page = _env->entries_per_page;
   for (int i = 0; i < page_count; ++i)
   {
     vector<pair<pair<long, long>, string>> vector_to_populate_page;
-    for (int j = 0; j < _env->entries_per_page; ++j)
+    entries_per_page = Utility::minInt(entries_per_page, vector_to_populate_tile.size());
+    for (int j = 0; j < entries_per_page; ++j)
     {
       vector_to_populate_page.push_back(vector_to_populate_tile[j]);
     }
@@ -300,10 +301,10 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
     if (MemoryBuffer::verbosity == 2)
     {
       std::cout << "\npopulating pages :: vector length = " << vector_to_populate_tile.size() << std::endl;
-      std::cout << "\nEntries per page = " << _env->entries_per_page << std::endl;
+      std::cout << "\nEntries per page = " << entries_per_page << std::endl;
     }
 
-    for (int j = 0; j < _env->entries_per_page; ++j)
+    for (int j = 0; j < entries_per_page; ++j)
     {
       long sort_key_to_insert = vector_to_populate_page[j].first.first;
       long delete_key_to_insert = vector_to_populate_page[j].first.second;
@@ -319,7 +320,7 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
         std::cout << vector_to_populate_page[j].first.first << " " << vector_to_populate_page[j].first.second << std::endl;
     }
 
-    vector_to_populate_tile.erase(vector_to_populate_tile.begin(), vector_to_populate_tile.begin() + _env->entries_per_page);
+    vector_to_populate_tile.erase(vector_to_populate_tile.begin(), vector_to_populate_tile.begin() + entries_per_page);
 
     if (MemoryBuffer::verbosity == 2)
       std::cout << "populated pages\n"
@@ -334,7 +335,8 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
 int SSTFile::PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> vector_to_populate_file, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
-  int delete_tile_count = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
+  int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->delete_tile_size_in_pages);
+  int entries_per_delete_tile = _env->delete_tile_size_in_pages * _env->entries_per_page;
   //cout<<"Vector Size: "<<vector_to_populate_file.size()<<std::endl;
 
   if (MemoryBuffer::verbosity == 2)
@@ -343,13 +345,14 @@ int SSTFile::PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> 
   for (int i = 0; i < delete_tile_count; i++)
   {
     vector<pair<pair<long, long>, string>> vector_to_populate_tile;
-    for (int j = 0; j < _env->delete_tile_size_in_pages * _env->entries_per_page; ++j)
+    entries_per_delete_tile = Utility::minInt(entries_per_delete_tile, vector_to_populate_file.size());
+    for (int j = 0; j < entries_per_delete_tile; ++j)
     {
       vector_to_populate_tile.push_back(vector_to_populate_file[j]);
     }
     std::sort(vector_to_populate_tile.begin(), vector_to_populate_tile.end(), Utility::sortbydeletekey);
 
-    vector_to_populate_file.erase(vector_to_populate_file.begin(), vector_to_populate_file.begin() + _env->delete_tile_size_in_pages * _env->entries_per_page);
+    vector_to_populate_file.erase(vector_to_populate_file.begin(), vector_to_populate_file.begin() + entries_per_delete_tile);
 
     // std::cout << "\nprinting after trimming " << std::endl;
     // for (int j = 0; j < vector_to_populate_file.size(); ++j)
@@ -506,7 +509,14 @@ int MemoryBuffer::printBufferEntries()
 
 int DiskMetaFile::getMetaStatistics()
 {
+  long total_entry_count = 0;
   std::cout << "**************************** PRINTING META FILE STATISTICS ****************************" << std::endl;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    total_entry_count += DiskMetaFile::getLevelEntryCount(i);
+  }
+  std::cout << "\nTotal number of entries: " << total_entry_count << "\n" << std::endl;
   std::cout << "L\tfile_count\tentry_count\t" << std::endl;
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
@@ -574,7 +584,7 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
   if (MemoryBuffer::current_buffer_entry_count == 0) {
     std::cout << "\t\t\t\tBuffer is currently empty." << std::endl;
   }
-  else {
+  else {    //UNCOMMENT
     for (int i = 0; i < MemoryBuffer::current_buffer_entry_count; i++) {
       std::cout << "\t\t\t\tEntry : " << i << " (Sort_Key : " << MemoryBuffer::buffer[i].first.first
                 << ", Delete_Key : " << MemoryBuffer::buffer[i].first.second << ")" << std::endl;

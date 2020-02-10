@@ -24,7 +24,7 @@ using namespace std;
  * 
  */
 
-long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100000; 
+long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100000;
 
 int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
   
@@ -39,6 +39,7 @@ int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
     long value_size = entry_size - 2*sizeof(long);
     string value = generateValue(value_size);
     workload_file << "I " << sortkey << " " << deletekey << " " << value << std::endl;
+    //workload_file << sortkey << std::endl;
   }
   
   workload_file.close();

@@ -107,6 +107,7 @@ namespace tree_builder {
     static long level_current_size[32];
 
     static long level_max_size[32];
+    static long level_max_file_count[32];
     static long global_level_file_counter[32];
     static float disk_run_flush_threshold[32];
 

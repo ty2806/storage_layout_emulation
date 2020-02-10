@@ -59,8 +59,9 @@ int main(int argc, char *argvx[]) {
     //int s = run_workload(read, pread, rread, write, update, del, skew, others); 
     int s = runWorkload(_env);
 
-    int only_file_meta_data = 1;
-    DiskMetaFile::printAllEntries(only_file_meta_data);
+    int only_file_meta_data = 0;
+    if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+      DiskMetaFile::printAllEntries(only_file_meta_data);
     MemoryBuffer::getCurrentBufferStatistics();
     DiskMetaFile::getMetaStatistics();
 

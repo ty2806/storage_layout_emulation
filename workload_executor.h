@@ -35,6 +35,7 @@ namespace workload_exec {
       static int compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in);
       static bool sortbysortkey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b);
       static bool sortbydeletekey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b);
+      static int minInt(int a, int b);
   };
 
 
