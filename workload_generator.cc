@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <time.h>
 #include <fstream>
+#include <stdlib.h>
 
 #include "args.hxx"
 #include "workload_generator.h"
@@ -31,6 +32,8 @@ int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
   ofstream workload_file;
   workload_file.open("workload.txt");
 
+  //srand(time(0));
+
   for (long i=0; i<insert_count; ++i) {
     string sortkey = generateKey();
     string deletekey = std::to_string(i + 1);
@@ -49,8 +52,7 @@ int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
 
 
 string WorkloadGenerator::generateKey() {
-  //srand(time(0));
-  unsigned long long randomness = rand() %  KEY_DOMAIN_SIZE;
+  unsigned long randomness = rand() %  KEY_DOMAIN_SIZE;
   string key = std::to_string(randomness);
   return key;
 }

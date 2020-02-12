@@ -3,3 +3,5 @@ workload.txt
 emu_runner.dSYM/
 .DS_Store
 .vscode/
+*.csv
+*.sh
