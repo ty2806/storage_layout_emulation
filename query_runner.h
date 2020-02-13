@@ -38,6 +38,10 @@ public:
     static int pointQueryRunner (int iterations);
     static int rangeQuery (int lowerlimit, int upperlimit);
     static int secondaryRangeQuery (int lowerlimit, int upperlimit);
-    static void initData ();
+
+    static int range_query_experiment();
+    static int sec_range_query_experiment();
+    static int delete_query_experiment();
+    static int point_query_experiment();
 
 };

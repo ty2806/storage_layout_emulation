@@ -22,6 +22,30 @@ using namespace workload_exec;
 long WorkloadExecutor::buffer_insert_count = 0;
 long WorkloadExecutor::buffer_update_count = 0;
 long WorkloadExecutor::total_insert_count = 0;
+uint32_t WorkloadExecutor::counter = 0;
+
+inline void showProgress(const uint32_t &workload_size, const uint32_t &counter) {
+  
+    // std::cout << "counter = " << counter << std::endl;
+    if (counter / (workload_size/100) >= 1) {
+      for (int i = 0; i<104; i++){
+        std::cout << "\b";
+        fflush(stdout);
+      }
+    }
+    for (int i = 0; i<counter / (workload_size/100); i++){
+      std::cout << "=" ;
+      fflush(stdout);
+    }
+    std::cout << std::setfill(' ') << std::setw(101 - counter / (workload_size/100));
+    std::cout << counter*100/workload_size << "%";
+      fflush(stdout);
+
+  if (counter == workload_size) {
+    std::cout << "\n";
+    return;
+  }
+}
 
 //This is used to sort the whole file based on sort key
 bool Utility::sortbysortkey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b)
@@ -298,6 +322,7 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
 
 int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
 {
+  EmuEnv* _env = EmuEnv::getInstance();
   bool found = false;
   //For UPDATES in inserts
   for (int i = 0; i < MemoryBuffer::buffer.size(); ++i)
@@ -356,6 +381,10 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
       MemoryBuffer::current_buffer_size = 0;
     }
   }
+  counter++;
+
+  if(counter % (_env->num_inserts/100) == 0 && _env->verbosity < 2)
+      showProgress(_env->num_inserts, counter);
 
   return 1;
 }

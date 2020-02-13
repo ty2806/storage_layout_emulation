@@ -27,12 +27,12 @@ using namespace workload_exec;
 /*
  * DECLARATIONS
 */
-int Query::delete_key = 700;
-int Query::range_start_key = 2000;
-int Query::range_end_key = 5000;
-int Query::sec_range_start_key = 200;
-int Query::sec_range_end_key = 500;
-int Query::iterations_point_query = 100000;
+int Query::delete_key;
+int Query::range_start_key;
+int Query::range_end_key;
+int Query::sec_range_start_key;
+int Query::sec_range_end_key;
+int Query::iterations_point_query;
 
 //long inserts(EmuEnv* _env);
 int parse_arguments2(int argc, char *argvx[], EmuEnv* _env);
@@ -46,15 +46,27 @@ int main(int argc, char *argvx[]) {
 
   // check emu_environment.h for the contents of EmuEnv and also the definitions of the singleton experimental environment 
   EmuEnv* _env = EmuEnv::getInstance();
-  fstream fout;
-  
   //parse the command line arguments
   if (parse_arguments2(argc, argvx, _env)){
     exit(1);
   }
-  
-  
-  
+
+  fstream fout1, fout2, fout3, fout4;
+  fout1.open("out_delete.csv", ios::out | ios::app);
+  fout2.open("out_range.csv", ios::out | ios::app);
+  fout3.open("out_sec_range.csv", ios::out | ios::app);
+  fout4.open("out_point.csv", ios::out | ios::app);
+
+  fout1 << "Delete tile size" << ", " << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
+  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurances" << "\n";
+  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurances" << "\n";
+  fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
+
+  fout1.close();
+  fout2.close();
+  fout3.close();
+  fout4.close();
+    
   // Issuing INSERTS
   if (_env->num_inserts > 0) 
   {
@@ -64,36 +76,15 @@ int main(int argc, char *argvx[]) {
     WorkloadGenerator workload_generator;
     workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size);
 
-    fout.open("out.csv", ios::out);
-
-    fout << " " << ", " 
-          << "Delete" << ", " << ", " << ", " << ", " 
-          << "Range" << ", " << ", "
-          << "Sec Range" << ", " << ", "
-          << "Point" << ", " << ", " << ", "
-          << "\n";
     
 
-    fout << "Delete tile size" << ", " 
-          << "(Delete) KEY" << ", " 
-          << "(Delete) Full Drop" << ", " 
-          << "(Delete) Partial Drop" << ", " 
-          << "(Delete) Impossible Drop" << ", " 
-          << "(Range) KEYs" << ", " 
-          << "(Range) Occurances" << ", " 
-          << "(Sec Range) KEYs" << ", " 
-          << "(Sec Range) Occurances" << ", " 
-          << "(Point) Iterations" << ", " 
-          << "(Point) Sum_Page_Id" << ", " 
-          << "(Point) Avg_Page_Id" << ", " 
-          << "(Point) Found" << ", " 
-          << "(Point) Not Found" << "\n";
-    
     int only_file_meta_data = 0;
 
     if(_env->delete_tile_size_in_pages > 0)
     {
       int s = runWorkload(_env);
+      std::cout << "Insert complete ... " << std::endl << std::flush; 
+
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
       {
         DiskMetaFile::printAllEntries(only_file_meta_data);
@@ -104,7 +95,7 @@ int main(int argc, char *argvx[]) {
       Query::checkDeleteCount(Query::delete_key);
       Query::rangeQuery(Query::range_start_key, Query::range_end_key);
       Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
-      Query::pointQueryRunner(Query::iterations_point_query);
+      // Query::pointQueryRunner(Query::iterations_point_query);
 
       cout << "H" << "\t" 
         << "DKey" << "\t" 
@@ -169,40 +160,19 @@ int main(int argc, char *argvx[]) {
           DiskMetaFile::getMetaStatistics();
         }
 
-        Query::checkDeleteCount(Query::delete_key);
-        Query::rangeQuery(Query::range_start_key, Query::range_end_key);
-        Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
-        Query::pointQueryRunner(Query::iterations_point_query);
-
-        fout << _env->delete_tile_size_in_pages << ", " 
-          << Query::delete_key << ", " 
-          << Query::complete_delete_count << ", " 
-          << Query::partial_delete_count << ", " 
-          << Query::not_possible_delete_count << ", " 
-          << Query::range_start_key << " " << Query::range_end_key << ", " 
-          << Query::range_occurances << ", " 
-          << Query::sec_range_start_key << " " << Query::sec_range_end_key << ", " 
-          << Query::secondary_range_occurances << ", " 
-          << Query::iterations_point_query << ", " 
-          << Query::sum_page_id << ", " 
-          << Query::sum_page_id/(Query::found_count * 1.0) << ", " 
-          << Query::found_count << ", " 
-          << Query::not_found_count << "\n";
+        Query::delete_query_experiment();
+        Query::range_query_experiment();
+        Query::sec_range_query_experiment();
+        Query::point_query_experiment();
         
-        Query::complete_delete_count = 0;
-        Query::not_possible_delete_count = 0;
-        Query::partial_delete_count = 0;
-        Query::range_occurances = 0;
-        Query::secondary_range_occurances = 0;
-        Query::sum_page_id = 0;
-        Query::found_count = 0;
-        Query::not_found_count = 0;
+        DiskMetaFile::clearAllEntries();
+        WorkloadExecutor::counter = 0;
         
         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-        printEmulationOutput(_env);
+          printEmulationOutput(_env);
       }
     }
-    fout.close();
+
     //srand(time(0));
     //WorkloadExecutor::getWorkloadStatictics(_env);
     //assert(_env->num_inserts == inserted); 
@@ -256,6 +226,14 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   args::ValueFlag<long> file_size_cmd(group1, "file_size", "The number of unique inserts to issue in the experiment [def: 256 KB]", {"file_size"});
   args::ValueFlag<int> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
+  
+  args::ValueFlag<int> delete_key_cmd(group1, "delete_key", "Delete all keys less than DK [def:700]", {'D', "delete_key"});
+  args::ValueFlag<int> range_start_key_cmd(group1, "range_start_key", "Starting key of the range query [def:2000]", {'S', "range_start_key"});
+  args::ValueFlag<int> range_end_key_cmd(group1, "range_end_key", "Ending key of the range query [def:5000]", {'F', "range_end_key"});
+  args::ValueFlag<int> sec_range_start_key_cmd(group1, "sec_range_start_key", "Starting key of the secondary range query [def:200]", {'s', "sec_range_start_key"});
+  args::ValueFlag<int> sec_range_end_key_cmd(group1, "sec_range_end_key", "Ending key of the secondary range query [def:500]", {'f', "sec_range_end_key"});
+  args::ValueFlag<int> iterations_point_query_cmd(group1, "iterations_point_query", "Number of point queries to be performed [def:100000]", {'N', "iterations_point_query"});
+
 
   try
   {
@@ -290,6 +268,13 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->num_inserts = num_inserts_cmd ? args::get(num_inserts_cmd) : 0;
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
 
+  Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
+  Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
+  Query::range_end_key = range_end_key_cmd ? args::get(range_end_key_cmd) : 5000;
+  Query::sec_range_start_key = sec_range_start_key_cmd ? args::get(sec_range_start_key_cmd) : 200;
+  Query::sec_range_end_key = sec_range_end_key_cmd ? args::get(sec_range_end_key_cmd) : 500;
+  Query::iterations_point_query = iterations_point_query_cmd ? args::get(iterations_point_query_cmd) : 100000;
+
   return 0;
 }
 
@@ -309,3 +294,4 @@ void printEmulationOutput(EmuEnv* _env) {
 
   std::cout << std::endl;
 }
+

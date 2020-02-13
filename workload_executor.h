@@ -22,6 +22,7 @@ namespace workload_exec {
     static long total_insert_count;
     static long buffer_update_count;
     static long buffer_insert_count;
+    static uint32_t counter;
 
     static int insert(long sortkey, long deletekey, string value);
     static int pointGet(long key);

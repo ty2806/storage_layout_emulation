@@ -97,6 +97,7 @@ namespace tree_builder {
 
     static int getMetaStatistics();
     static int printAllEntries(int only_file_meta_data);
+    static int clearAllEntries();
 
     static SSTFile* level_head[32];
 

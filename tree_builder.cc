@@ -494,7 +494,7 @@ int MemoryBuffer::printBufferEntries()
   long size = 0;
   std::cout << "Printing sorted buffer (only keys): ";
   //std::cout << MemoryBuffer::buffer.size() << std::endl;
-  //std::sort(MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end(), Utility::sortbysortkey);    //COMMENT
+  std::sort(MemoryBuffer::buffer.begin(), MemoryBuffer::buffer.end(), Utility::sortbysortkey);    //COMMENT
   for (int i = 0; i < MemoryBuffer::buffer.size(); ++i)
   {
     std::cout << "< " << MemoryBuffer::buffer[i].first.first << ",  " << MemoryBuffer::buffer[i].first.second << " >"
@@ -634,5 +634,60 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
     }
   }
   std::cout << "\n**********************************************************************************************************************************\n" << std::endl;
+  return 1;
+}
+
+int DiskMetaFile::clearAllEntries()
+{
+  cout << "Clearing previously created tree..." << endl;
+  EmuEnv *_env = EmuEnv::getInstance();
+
+  MemoryBuffer::buffer.clear();
+  MemoryBuffer::current_buffer_entry_count = 0;
+  MemoryBuffer::current_buffer_saturation = 0;
+  MemoryBuffer::current_buffer_size = 0;
+  MemoryBuffer::buffer_flush_count = 0;
+
+  for (int i = 1; i <= 32; i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    SSTFile *moving_head_prev = level_i_head;
+
+    while (moving_head)
+    {
+      moving_head_prev = moving_head;
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
+      {
+        DeleteTile delete_tile = moving_head->tile_vector[k];
+        for (int l = 0; l < delete_tile.page_vector.size(); l++)
+        {
+          Page page = delete_tile.page_vector[l];
+          page.kv_vector.clear();
+          page.min_sort_key = -1;
+          page.max_sort_key = -1;
+          page.min_delete_key = -1;
+          page.max_delete_key = -1;
+        }
+        delete_tile.page_vector.clear();
+        delete_tile.min_sort_key = -1;
+        delete_tile.max_sort_key = -1;
+        delete_tile.min_delete_key = -1;
+        delete_tile.max_delete_key = -1;
+      }
+      moving_head->tile_vector.clear();
+      moving_head->max_sort_key = -1;
+      moving_head->min_sort_key = -1;
+      moving_head->min_delete_key = -1;
+      moving_head->max_delete_key = -1;
+
+      moving_head = moving_head->next_file_ptr;
+      moving_head_prev->next_file_ptr = NULL;
+      //delete(moving_head_prev->next_file_ptr);
+      free(moving_head_prev);
+    }
+    //delete(level_i_head);
+    DiskMetaFile::setSSTFileHead(NULL, i);
+  }
   return 1;
 }

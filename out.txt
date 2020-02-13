@@ -1,0 +1,240 @@
+Running for delete tile size : 1
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 724	Partial Drop: 10166	Impossible Drop: 13942
+Delete Key: 3333	Full Drop: 707	Partial Drop: 2891	Impossible Drop: 21234
+Delete Key: 1666	Full Drop: 706	Partial Drop: 1497	Impossible Drop: 22629
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 1
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 1
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 2
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 2
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 2
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 2
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 4
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 25
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 244
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1219
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2454
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 105
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 185
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 996
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 4325
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 9526	Avg_page_id: 1	Found: 9526	Not Found: 90474
+
+
+Running for delete tile size : 2
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 1081	Partial Drop: 7084	Impossible Drop: 16667
+Delete Key: 3333	Full Drop: 709	Partial Drop: 2662	Impossible Drop: 21461
+Delete Key: 1666	Full Drop: 706	Partial Drop: 1437	Impossible Drop: 22689
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 1
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 1
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 2
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 2
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 2
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 2
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 5
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 26
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 245
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1221
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2455
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 105
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 185
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 970
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 3827
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 14037	Avg_page_id: 1.49616	Found: 9382	Not Found: 90618
+
+
+Running for delete tile size : 4
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 2179	Partial Drop: 3708	Impossible Drop: 18945
+Delete Key: 3333	Full Drop: 724	Partial Drop: 2261	Impossible Drop: 21847
+Delete Key: 1666	Full Drop: 708	Partial Drop: 1339	Impossible Drop: 22785
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 7
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 7
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 7
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 7
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 7
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 7
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 7
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 28
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 250
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1223
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2460
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 105
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 185
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 921
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 3051
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 23439	Avg_page_id: 2.49856	Found: 9381	Not Found: 90619
+
+
+Running for delete tile size : 8
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 3130	Partial Drop: 1795	Impossible Drop: 19907
+Delete Key: 3333	Full Drop: 802	Partial Drop: 1653	Impossible Drop: 22377
+Delete Key: 1666	Full Drop: 715	Partial Drop: 1132	Impossible Drop: 22985
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 13
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 13
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 14
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 14
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 14
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 14
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 15
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 32
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 251
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1224
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2463
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 104
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 179
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 829
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 2194
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 43087	Avg_page_id: 4.5174	Found: 9538	Not Found: 90462
+
+
+Running for delete tile size : 16
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 3567	Partial Drop: 924	Impossible Drop: 20341
+Delete Key: 3333	Full Drop: 1025	Partial Drop: 919	Impossible Drop: 22888
+Delete Key: 1666	Full Drop: 748	Partial Drop: 833	Impossible Drop: 23251
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 15
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 15
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 16
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 17
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 17
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 17
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 23
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 33
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 268
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1231
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2469
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 103
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 174
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 697
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 1632
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 79784	Avg_page_id: 8.44007	Found: 9453	Not Found: 90547
+
+
+Running for delete tile size : 32
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 3802	Partial Drop: 460	Impossible Drop: 20570
+Delete Key: 3333	Full Drop: 1257	Partial Drop: 449	Impossible Drop: 23126
+Delete Key: 1666	Full Drop: 859	Partial Drop: 467	Impossible Drop: 23506
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 14
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 14
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 15
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 16
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 16
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 16
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 24
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 56
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 287
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1237
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2482
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 98
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 164
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 514
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 1411
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 156489	Avg_page_id: 16.516	Found: 9475	Not Found: 90525
+
+
+Running for delete tile size : 64
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 3909	Partial Drop: 243	Impossible Drop: 20680
+Delete Key: 3333	Full Drop: 1346	Partial Drop: 244	Impossible Drop: 23242
+Delete Key: 1666	Full Drop: 971	Partial Drop: 244	Impossible Drop: 23617
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 15
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 15
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 16
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 17
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 17
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 17
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 25
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 82
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 305
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1270
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2520
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 86
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 135
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 377
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 1305
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 306395	Avg_page_id: 32.4812	Found: 9433	Not Found: 90567
+
+
+Running for delete tile size : 128
+
+Delete Query ... 
+Delete Key: 14285	Full Drop: 3958	Partial Drop: 135	Impossible Drop: 20739
+Delete Key: 3333	Full Drop: 1404	Partial Drop: 128	Impossible Drop: 23300
+Delete Key: 1666	Full Drop: 1029	Partial Drop: 131	Impossible Drop: 23672
+
+Range Query ... 
+Selectivity: 0.0001%	Start Index: 100	End Index: 101	Occurances: 14
+Selectivity: 0.0002%	Start Index: 100	End Index: 102	Occurances: 14
+Selectivity: 0.0004%	Start Index: 100	End Index: 104	Occurances: 15
+Selectivity: 0.0006%	Start Index: 100	End Index: 106	Occurances: 16
+Selectivity: 0.0008%	Start Index: 100	End Index: 108	Occurances: 16
+Selectivity: 0.001%	Start Index: 100	End Index: 110	Occurances: 16
+Selectivity: 0.01%	Start Index: 100	End Index: 200	Occurances: 24
+Selectivity: 0.1%	Start Index: 100	End Index: 1100	Occurances: 96
+Selectivity: 1%	Start Index: 100	End Index: 10100	Occurances: 312
+Selectivity: 5%	Start Index: 100	End Index: 50100	Occurances: 1313
+Selectivity: 10%	Start Index: 100	End Index: 100100	Occurances: 2579
+
+Secondary Range Query ... 
+Selectivity: 0.01%	Start Index: 100	End Index: 110	Occurances: 73
+Selectivity: 0.1%	Start Index: 100	End Index: 200	Occurances: 105
+Selectivity: 1%	Start Index: 100	End Index: 1100	Occurances: 314
+Selectivity: 5%	Start Index: 100	End Index: 5100	Occurances: 1248
+
+Point Query ... 
+Iterations: 100000	Sum_page_id 605854	Avg_page_id: 63.7137	Found: 9509	Not Found: 90491
+
+
