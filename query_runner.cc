@@ -32,6 +32,30 @@ long Query::sum_page_id = 0;
 long Query::found_count = 0;
 long Query::not_found_count = 0;
 
+uint32_t counter = 0;
+
+inline void showProgress(const uint32_t &workload_size, const uint32_t &counter) {
+  
+    // std::cout << "counter = " << counter << std::endl;
+    if (counter / (workload_size/100) >= 1) {
+      for (int i = 0; i<104; i++){
+        std::cout << "\b";
+        fflush(stdout);
+      }
+    }
+    for (int i = 0; i<counter / (workload_size/100); i++){
+      std::cout << "=" ;
+      fflush(stdout);
+    }
+    std::cout << std::setfill(' ') << std::setw(101 - counter / (workload_size/100));
+    std::cout << counter*100/workload_size << "%";
+      fflush(stdout);
+
+  if (counter == workload_size) {
+    std::cout << "\n";
+    return;
+  }
+}
 
 int Query::checkDeleteCount (int deletekey)
 {
@@ -86,7 +110,7 @@ int Query::delete_query_experiment()
   {
     delete_key1 = _env->num_inserts/selectivity[i];
     Query::checkDeleteCount(delete_key1);
-    fout1 << _env->delete_tile_size_in_pages << "," << delete_key1 << "," << Query::complete_delete_count << "," << Query::partial_delete_count 
+    fout1 << _env->delete_tile_size_in_pages << "," << "1/"+ to_string(selectivity[i])  << "," << delete_key1 << "," << Query::complete_delete_count << "," << Query::partial_delete_count 
       << "," << Query::not_possible_delete_count << endl;
   }
 
@@ -96,17 +120,17 @@ int Query::delete_query_experiment()
 int Query::range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  float selectivity[11] = {0.0001, 0.0002, 0.0004, 0.0006, 0.0008, 0.001, 0.01, 0.1, 1, 5, 10};
+  float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
   int range_iterval_1, range_query_start_1, range_query_end_1;
 
   fstream fout2;
   fout2.open("out_range.csv", ios::out | ios::app);
 
-  for (int i = 0; i < 11 ; i++ )
+  for (int i = 0; i < 35 ; i++ )
   {
-    range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE*selectivity[i]/100;  
-    range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE*0.0001;
-    range_query_end_1 = range_query_start_1 + range_iterval_1;
+    range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE*selectivity[i]/100;
+    range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE/2 - range_iterval_1/2;
+    range_query_end_1 = WorkloadGenerator::KEY_DOMAIN_SIZE/2 + range_iterval_1/2;
     Query::rangeQuery(range_query_start_1, range_query_end_1);
     fout2 << _env->delete_tile_size_in_pages << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
   }
@@ -117,16 +141,16 @@ int Query::sec_range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  float selectivity[4] = {0.01, 0.1, 1, 5};
+  float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
 
   fstream fout3;
   fout3.open("out_sec_range.csv", ios::out | ios::app);
 
-  for (int i = 0; i < 4 ; i++ )
+  for (int i = 0; i < 35 ; i++ )
   {
-    range_iterval_1 = _env->num_inserts *selectivity[i]/100;  
-    range_query_start_1 = _env->num_inserts *0.001;
-    range_query_end_1 = range_query_start_1 + range_iterval_1;
+    range_iterval_1 = _env->num_inserts * selectivity[i]/100;  
+    range_query_start_1 = _env->num_inserts/2 - range_iterval_1/2;
+    range_query_end_1 = _env->num_inserts/2 + range_iterval_1/2;
     Query::secondaryRangeQuery(range_query_start_1, range_query_end_1);
     fout3 << _env->delete_tile_size_in_pages << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::secondary_range_occurances << endl;
   }
@@ -137,7 +161,7 @@ int Query::sec_range_query_experiment()
 int Query::point_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  int point_query_iteration1 = 100000;
+  int point_query_iteration1 = 1000000;
   fstream fout4;
   fout4.open("out_point.csv", ios::out | ios::app);
 
@@ -272,6 +296,7 @@ int Query::pointQuery (int key)
 
 int Query::pointQueryRunner (int iterations)
 {
+  counter = 0;
   sum_page_id = 0;
   found_count = 0;
   not_found_count = 0;
@@ -288,6 +313,12 @@ int Query::pointQueryRunner (int iterations)
       //cout << pageId << endl;
       sum_page_id += pageId;
       found_count++;
+    }
+    counter++;
+
+    if(!(counter % (iterations/100))){
+      // std::cout << "baal " << iterations << " " << counter;
+      showProgress(iterations, counter);
     }
   }
     // std::cout << "(Point Query)" << std::endl;

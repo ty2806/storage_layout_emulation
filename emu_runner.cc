@@ -57,9 +57,9 @@ int main(int argc, char *argvx[]) {
   fout3.open("out_sec_range.csv", ios::out | ios::app);
   fout4.open("out_point.csv", ios::out | ios::app);
 
-  fout1 << "Delete tile size" << ", " << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
-  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurances" << "\n";
-  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurances" << "\n";
+  fout1 << "Delete tile size" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
+  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
+  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
   fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
 
   fout1.close();
@@ -78,7 +78,7 @@ int main(int argc, char *argvx[]) {
 
     
 
-    int only_file_meta_data = 0;
+    int only_file_meta_data = 1;
 
     if(_env->delete_tile_size_in_pages > 0)
     {
@@ -95,7 +95,7 @@ int main(int argc, char *argvx[]) {
       Query::checkDeleteCount(Query::delete_key);
       Query::rangeQuery(Query::range_start_key, Query::range_end_key);
       Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
-      // Query::pointQueryRunner(Query::iterations_point_query);
+      Query::pointQueryRunner(Query::iterations_point_query);
 
       cout << "H" << "\t" 
         << "DKey" << "\t" 
@@ -160,9 +160,13 @@ int main(int argc, char *argvx[]) {
           DiskMetaFile::getMetaStatistics();
         }
 
+        cout << "Running Delete Query..." << endl;
         Query::delete_query_experiment();
+        cout << "Running Range Query..." << endl;
         Query::range_query_experiment();
+        cout << "Running Secondary Range Query..." << endl;
         Query::sec_range_query_experiment();
+        cout << "Running Point Query..." << endl;
         Query::point_query_experiment();
         
         DiskMetaFile::clearAllEntries();

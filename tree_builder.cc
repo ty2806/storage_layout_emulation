@@ -620,7 +620,6 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
             std::cout << "\033[1;33m\t\t\tPage : " << l << " (Min_Sort_Key : " << page.min_sort_key
                       << ", Max_Sort_Key : " << page.max_sort_key << ", Min_Delete_Key : " << page.min_delete_key << ", Max_Delete_Key : " << page.max_delete_key << ")"
                       << "\033[0m" << std::endl;
-
             for (int m = 0; m < page.kv_vector.size(); m++)
             {
               std::cout << "\t\t\t\tEntry : " << m << " (Sort_Key : " << page.kv_vector[m].first.first
@@ -629,7 +628,6 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
           }
         }
       }
-      
       moving_head = moving_head->next_file_ptr;
     }
   }
