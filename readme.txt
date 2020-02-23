@@ -1,0 +1,20 @@
+./emu_runner -i 1000000 -P 4096 -B4 -E1024 -T10 -h 1 -c 0 -D 1000 -S 10000 -F 1000000 -s 1000 -f 10000 -N 1000000
+
+
+i = 1000000 [Number of inserts]
+P = 4096 [Buffer size in pages]
+B = 4 [Entries in page]
+E = 1024 [Entry size in bytes]
+T = 10 [Size Ratio]
+
+h = 1 [Delete tile size in pages. If h not specified (-1), the code will be in experiment mode. It will run for all values of h from 1 to P (multiplicative factor 2). Also, if h is not specified, the values D, S, F, s, f and N are don't care. They are tuned inside the code based on experiment selectivity]
+
+c = 0 means no correlation in data (Which is default). 1 means sort key = delete key
+D = 1000 [Delete all keys that have delete key < 1000]
+S = 10000 [Start key for primary range query]
+F = 1000000 [End key for primary range query]
+s = 1000 [Start key for secondary range query]
+f = 10000 [End key for secondary range query]
+N = 1000000 [Iterations for point query]
+
+Another tuning parameter is the KEY_DOMAIN_SIZE in workload_generator.cc 

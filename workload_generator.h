@@ -21,7 +21,7 @@ private:
 public:
   static long long KEY_DOMAIN_SIZE;
 
-  static int generateWorkload(long insert_count, long entry_size);
+  static int generateWorkload(long insert_count, long entry_size, int correlation);
   static string generateKey();
   static string generateValue(long value_size);
   

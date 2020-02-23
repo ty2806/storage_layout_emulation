@@ -74,7 +74,7 @@ int main(int argc, char *argvx[]) {
       std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
     WorkloadGenerator workload_generator;
-    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size);
+    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);
 
     
 
@@ -229,6 +229,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   args::ValueFlag<int> delete_tile_size_in_pages_cmd(group1, "delete_tile_size_in_pages", "The number of unique inserts to issue in the experiment [def: -1]", {'h', "delete_tile_size_in_pages"});
   args::ValueFlag<long> file_size_cmd(group1, "file_size", "The number of unique inserts to issue in the experiment [def: 256 KB]", {"file_size"});
   args::ValueFlag<int> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
+  args::ValueFlag<int> cor_cmd(group1, "#correlation", "Correlation between sort key and delete key [def: 0]", {'c', "correlation"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
   
   args::ValueFlag<int> delete_key_cmd(group1, "delete_key", "Delete all keys less than DK [def:700]", {'D', "delete_key"});
@@ -271,6 +272,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->file_size = file_size_cmd ? args::get(file_size_cmd) : _env->buffer_size;
   _env->num_inserts = num_inserts_cmd ? args::get(num_inserts_cmd) : 0;
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
+  _env->correlation = cor_cmd ? args::get(cor_cmd) : 0;
 
   Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
   Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;

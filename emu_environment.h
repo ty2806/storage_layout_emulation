@@ -30,6 +30,7 @@ public:
 
   int delete_tile_size_in_pages; // h
   long file_size; // B/s ; in Bytes
+  int correlation; // c
 
   float buffer_flush_threshold;
   float disk_run_flush_threshold;

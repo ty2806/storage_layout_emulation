@@ -128,9 +128,18 @@ int Query::range_query_experiment()
 
   for (int i = 0; i < 35 ; i++ )
   {
-    range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE*selectivity[i]/100;
-    range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE/2 - range_iterval_1/2;
-    range_query_end_1 = WorkloadGenerator::KEY_DOMAIN_SIZE/2 + range_iterval_1/2;
+    if (_env->correlation == 0)
+    {
+      range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE * selectivity[i] / 100;
+      range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 - range_iterval_1 / 2;
+      range_query_end_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 + range_iterval_1 / 2;
+    }
+    else
+    {
+      range_iterval_1 = _env->num_inserts * selectivity[i] / 100;
+      range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
+      range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
+    }
     Query::rangeQuery(range_query_start_1, range_query_end_1);
     fout2 << _env->delete_tile_size_in_pages << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
   }

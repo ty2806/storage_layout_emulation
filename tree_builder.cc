@@ -120,6 +120,29 @@ int DiskMetaFile::getLevelFileCount(int level)
   return level_size_in_files;
 }
 
+int DiskMetaFile::getTotalPageCount()
+{
+  int counter = 0;
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      for (int k = 0; k < moving_head->tile_vector.size(); k++)
+      {
+        DeleteTile delete_tile = moving_head->tile_vector[k];
+        for (int l = 0; l < delete_tile.page_vector.size(); l++)
+        {
+          counter++;
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+  }
+  return counter;
+}
+
 long DiskMetaFile::getLevelEntryCount(int level)
 {
   SSTFile *level_head = DiskMetaFile::getSSTFileHead(level);

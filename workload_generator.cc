@@ -27,16 +27,21 @@ using namespace std;
 
 long long WorkloadGenerator::KEY_DOMAIN_SIZE = 1000000000;
 
-int WorkloadGenerator::generateWorkload(long insert_count, long entry_size) {
+int WorkloadGenerator::generateWorkload(long insert_count, long entry_size, int correlation) {
   
   ofstream workload_file;
   workload_file.open("workload.txt");
 
   //srand(time(0));
+  string sortkey, deletekey;
 
   for (long i=0; i<insert_count; ++i) {
-    string sortkey = generateKey();
-    string deletekey = std::to_string(i + 1);
+    if (correlation == 0)
+      sortkey = generateKey();
+    else
+      sortkey = std::to_string(i + 1);
+      
+    deletekey = std::to_string(i + 1);
 
     // long value_size = entry_size - key.size();
     long value_size = entry_size - 2*sizeof(long);
