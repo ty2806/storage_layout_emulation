@@ -25,7 +25,7 @@ using namespace std;
  * 
  */
 
-long long WorkloadGenerator::KEY_DOMAIN_SIZE = 1000000000;
+long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100;
 
 int WorkloadGenerator::generateWorkload(long insert_count, long entry_size, int correlation) {
   

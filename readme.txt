@@ -1,4 +1,4 @@
-./emu_runner -i 1000000 -P 4096 -B4 -E1024 -T10 -h 1 -c 0 -D 1000 -S 10000 -F 1000000 -s 1000 -f 10000 -N 1000000
+./emu_runner -i 1000000 -P 4096 -B 4 -E 1024 -T 10 -h 1 -c 0 -D 1000 -S 10000 -F 1000000 -s 1000 -f 10000 -N 1000000
 
 
 i = 1000000 [Number of inserts]
@@ -18,3 +18,13 @@ f = 10000 [End key for secondary range query]
 N = 1000000 [Iterations for point query]
 
 Another tuning parameter is the KEY_DOMAIN_SIZE in workload_generator.cc 
+
+Small running command:
+
+./emu_runner -i 50 -P 4 -B 2 -E 32 -T 2 -h 1 -V 1
+
+
+------------------------------------------------------
+Lethe+
+
+X: Same h across tree or different h [0 for classical lethe and 1 for new lethe]

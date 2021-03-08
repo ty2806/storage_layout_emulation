@@ -308,7 +308,8 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
     std::cout << "In PopulateDeleteTile() ... " << std::endl;
 
   EmuEnv *_env = EmuEnv::getInstance();
-  int page_count = _env->delete_tile_size_in_pages;
+  // int page_count = _env->delete_tile_size_in_pages;
+  int page_count = _env->getDeleteTileSize(level_to_flush_in);
   int entries_per_page = _env->entries_per_page;
   for (int i = 0; i < page_count; ++i)
   {
@@ -358,8 +359,10 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
 int SSTFile::PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> vector_to_populate_file, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
-  int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->delete_tile_size_in_pages);
-  int entries_per_delete_tile = _env->delete_tile_size_in_pages * _env->entries_per_page;
+  // int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->delete_tile_size_in_pages);
+  // int entries_per_delete_tile = _env->delete_tile_size_in_pages * _env->entries_per_page;
+  int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->getDeleteTileSize(level_to_flush_in));
+  int entries_per_delete_tile = _env->getDeleteTileSize(level_to_flush_in) * _env->entries_per_page;
   //cout<<"Vector Size: "<<vector_to_populate_file.size()<<std::endl;
 
   if (MemoryBuffer::verbosity == 2)
@@ -432,12 +435,17 @@ SSTFile *SSTFile::createNewSSTFile(int level_to_flush_in)
   new_file->min_sort_key = -1;
   new_file->min_delete_key = -1;
 
-  int delete_tile_count_in_a_file = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
+  // int delete_tile_count_in_a_file = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
+  int delete_tile_count_in_a_file = _env->buffer_size_in_pages / _env->getDeleteTileSize(level_to_flush_in);
 
   new_file->tile_vector = DeleteTile::createNewDeleteTiles(delete_tile_count_in_a_file);
 
   for (int i = 0; i < new_file->tile_vector.size(); ++i)
-    new_file->tile_vector[i].page_vector = Page::createNewPages(_env->delete_tile_size_in_pages);
+  {
+    // new_file->tile_vector[i].page_vector = Page::createNewPages(_env->delete_tile_size_in_pages);
+    new_file->tile_vector[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
+  }
+    
 
   new_file->file_level = level_to_flush_in;
   new_file->next_file_ptr = NULL;

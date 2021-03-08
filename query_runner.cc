@@ -100,13 +100,26 @@ int Query::checkDeleteCount (int deletekey)
 int Query::delete_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  int selectivity[3] = {7, 30, 60};
+  // int selectivity[3] = {7, 30, 60};
+  double selectivity[20] = {100000, 50000, 10000, 7500, 5000, 2500, 1000, 750, 500, 250};
+  double increment = 0.01;
+  int j = 10;
+  // for (float i = 0.005 ; i < 1; i+= 0.005)
+  // {
+  //   selectivity[j] = (100/i);
+  //   j++;
+  // }
+  for (float i = 1 ; i <= 10; i++)
+  {
+    selectivity[j] = (100/i);
+    j++;
+  }
   int delete_key1;
 
   fstream fout1;
   fout1.open("out_delete.csv", ios::out | ios::app);
 
-  for (int i = 0 ; i < 3; i++)
+  for (int i = 0 ; i < 20; i++)
   {
     delete_key1 = _env->num_inserts/selectivity[i];
     Query::checkDeleteCount(delete_key1);
@@ -170,7 +183,7 @@ int Query::sec_range_query_experiment()
 int Query::point_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  int point_query_iteration1 = 1000000;
+  int point_query_iteration1 = 100000;
   fstream fout4;
   fout4.open("out_point.csv", ios::out | ios::app);
 

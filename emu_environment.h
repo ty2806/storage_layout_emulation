@@ -38,6 +38,10 @@ public:
   int num_inserts;
 
   int verbosity;
+  int lethe_new;  // 0 for classical lethe, 1 for new lethe
+  int variable_delete_tile_size_in_pages[20] = {-1, 1, 2, 3, 4, 5};
+
+  int getDeleteTileSize(int level);
 
 };
 

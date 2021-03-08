@@ -24,8 +24,20 @@ EmuEnv::EmuEnv()
 
   num_inserts = 0;
 
-  verbosity=0;
+  verbosity = 0;
+  lethe_new = 0;  // 0 for classical lethe, 1 for new lethe
   
+}
+int EmuEnv::getDeleteTileSize(int level)
+{
+  if (lethe_new == 1)
+  {
+    return variable_delete_tile_size_in_pages[level];
+  }
+  else
+  {
+    return delete_tile_size_in_pages;
+  }
 }
 
 EmuEnv* EmuEnv::getInstance()

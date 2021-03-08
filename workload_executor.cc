@@ -242,7 +242,8 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
   {
     if (MemoryBuffer::verbosity == 2)
       std::cout << "NULL" << std::endl;
-    if (vector_to_compact.size() % _env->delete_tile_size_in_pages != 0 && vector_to_compact.size() / _env->delete_tile_size_in_pages < 1)
+
+    if (vector_to_compact.size() % _env->getDeleteTileSize(level_to_flush_in) != 0 && vector_to_compact.size() / _env->getDeleteTileSize(level_to_flush_in) < 1)
     {
       std::cout << " ERROR " << std::endl;
       exit(1);
@@ -383,8 +384,8 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
   }
   counter++;
 
-  if(counter % (_env->num_inserts/100) == 0 && _env->verbosity < 2)
-      showProgress(_env->num_inserts, counter);
+  // if(counter % (_env->num_inserts/100) == 0 && _env->verbosity < 2)
+  //     showProgress(_env->num_inserts, counter);
 
   return 1;
 }

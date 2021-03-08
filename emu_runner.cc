@@ -78,7 +78,7 @@ int main(int argc, char *argvx[]) {
 
     
 
-    int only_file_meta_data = 1;
+    int only_file_meta_data = 0;
 
     if(_env->delete_tile_size_in_pages > 0)
     {
@@ -92,55 +92,55 @@ int main(int argc, char *argvx[]) {
         DiskMetaFile::getMetaStatistics();
       }
 
-      Query::checkDeleteCount(Query::delete_key);
-      Query::rangeQuery(Query::range_start_key, Query::range_end_key);
-      Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
-      Query::pointQueryRunner(Query::iterations_point_query);
+      // Query::checkDeleteCount(Query::delete_key);
+      // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
+      // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
+      // Query::pointQueryRunner(Query::iterations_point_query);
 
-      cout << "H" << "\t" 
-        << "DKey" << "\t" 
-        << "Full_Drop" << "\t" 
-        << "Partial_Drop" << "\t" 
-        << "No_Drop" << "\t\t" 
-        << "RKEYs" << "\t" 
-        << "Occurance" << "\t" 
-        << "SRKEYs" << "\t" 
-        << "Occurance" << "\t" 
-        << "P_iter" << "\t\t" 
-        << "Sumpid" << "\t\t" 
-        << "Avgpid" << "\t\t" 
-        << "Found" << "\t\t" 
-        << "NtFound" << "\n";
+      // cout << "H" << "\t" 
+      //   << "DKey" << "\t" 
+      //   << "Full_Drop" << "\t" 
+      //   << "Partial_Drop" << "\t" 
+      //   << "No_Drop" << "\t\t" 
+      //   << "RKEYs" << "\t" 
+      //   << "Occurance" << "\t" 
+      //   << "SRKEYs" << "\t" 
+      //   << "Occurance" << "\t" 
+      //   << "P_iter" << "\t\t" 
+      //   << "Sumpid" << "\t\t" 
+      //   << "Avgpid" << "\t\t" 
+      //   << "Found" << "\t\t" 
+      //   << "NtFound" << "\n";
 
-      cout << _env->delete_tile_size_in_pages;
-      cout.setf(ios::right);
-      cout.precision(4);
-      cout.width(10);
-      cout << Query::delete_key;
-      cout.width(11);
-      cout << Query::complete_delete_count;
-      cout.width(18);
-      cout << Query::partial_delete_count;
-      cout.width(12);
-      cout << Query::not_possible_delete_count;
-      cout.width(12);
-      cout << Query::range_start_key << " " << Query::range_end_key;
-      cout.width(9);
-      cout << Query::range_occurances;
-      cout.width(11);
-      cout << Query::sec_range_start_key << " " << Query::sec_range_end_key;
-      cout.width(9);
-      cout << Query::secondary_range_occurances;
-      cout.width(15);
-      cout << Query::iterations_point_query;
-      cout.width(16);
-      cout << Query::sum_page_id;
-      cout.width(16);
-      cout << Query::sum_page_id/(Query::found_count * 1.0);
-      cout.width(15);
-      cout << Query::found_count;
-      cout.width(17);
-      cout << Query::not_found_count << "\n";
+      // cout << _env->delete_tile_size_in_pages;
+      // cout.setf(ios::right);
+      // cout.precision(4);
+      // cout.width(10);
+      // cout << Query::delete_key;
+      // cout.width(11);
+      // cout << Query::complete_delete_count;
+      // cout.width(18);
+      // cout << Query::partial_delete_count;
+      // cout.width(12);
+      // cout << Query::not_possible_delete_count;
+      // cout.width(12);
+      // cout << Query::range_start_key << " " << Query::range_end_key;
+      // cout.width(9);
+      // cout << Query::range_occurances;
+      // cout.width(11);
+      // cout << Query::sec_range_start_key << " " << Query::sec_range_end_key;
+      // cout.width(9);
+      // cout << Query::secondary_range_occurances;
+      // cout.width(15);
+      // cout << Query::iterations_point_query;
+      // cout.width(16);
+      // cout << Query::sum_page_id;
+      // cout.width(16);
+      // cout << Query::sum_page_id/(Query::found_count * 1.0);
+      // cout.width(15);
+      // cout << Query::found_count;
+      // cout.width(17);
+      // cout << Query::not_found_count << "\n";
 
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
         printEmulationOutput(_env);
@@ -167,7 +167,7 @@ int main(int argc, char *argvx[]) {
         cout << "Running Secondary Range Query..." << endl;
         Query::sec_range_query_experiment();
         cout << "Running Point Query..." << endl;
-        Query::point_query_experiment();
+        // Query::point_query_experiment();
         
         DiskMetaFile::clearAllEntries();
         WorkloadExecutor::counter = 0;
@@ -221,16 +221,17 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
 
   args::Group group1(parser, "This group is all exclusive:", args::Group::Validators::DontCare);
 
-  args::ValueFlag<int> size_ratio_cmd(group1, "T", "The number of unique inserts to issue in the experiment [def: 2]", {'T', "size_ratio"});
-  args::ValueFlag<int> buffer_size_in_pages_cmd(group1, "P", "The number of unique inserts to issue in the experiment [def: 128]", {'P', "buffer_size_in_pages"});
-  args::ValueFlag<int> entries_per_page_cmd(group1, "B", "The number of unique inserts to issue in the experiment [def: 128]", {'B', "entries_per_page"});
-  args::ValueFlag<int> entry_size_cmd(group1, "E", "The number of unique inserts to issue in the experiment [def: 128 B]", {'E', "entry_size"});
-  args::ValueFlag<long> buffer_size_cmd(group1, "M", "The number of unique inserts to issue in the experiment [def: 2 MB]", {'M', "memory_size"});
-  args::ValueFlag<int> delete_tile_size_in_pages_cmd(group1, "delete_tile_size_in_pages", "The number of unique inserts to issue in the experiment [def: -1]", {'h', "delete_tile_size_in_pages"});
-  args::ValueFlag<long> file_size_cmd(group1, "file_size", "The number of unique inserts to issue in the experiment [def: 256 KB]", {"file_size"});
+  args::ValueFlag<int> size_ratio_cmd(group1, "T", "The size ratio of the tree [def: 2]", {'T', "size_ratio"});
+  args::ValueFlag<int> buffer_size_in_pages_cmd(group1, "P", "Size of the memory buffer in terms of pages [def: 128]", {'P', "buffer_size_in_pages"});
+  args::ValueFlag<int> entries_per_page_cmd(group1, "B", "No of entries in one page [def: 128]", {'B', "entries_per_page"});
+  args::ValueFlag<int> entry_size_cmd(group1, "E", "Entry size in bytes [def: 128 B]", {'E', "entry_size"});
+  args::ValueFlag<long> buffer_size_cmd(group1, "M", "Memory size (PBE) [def: 2 MB]", {'M', "memory_size"});
+  args::ValueFlag<int> delete_tile_size_in_pages_cmd(group1, "delete_tile_size_in_pages", "Size of a delete tile in terms of pages [def: -1]", {'h', "delete_tile_size_in_pages"});
+  args::ValueFlag<long> file_size_cmd(group1, "file_size", "file size [def: 256 KB]", {"file_size"});
   args::ValueFlag<int> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
   args::ValueFlag<int> cor_cmd(group1, "#correlation", "Correlation between sort key and delete key [def: 0]", {'c', "correlation"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
+  args::ValueFlag<int> lethe_new_cmd(group1, "lethe_new", "Same h across tree or different h [0, 1; def:0]", {'X', "lethe_new"});
   
   args::ValueFlag<int> delete_key_cmd(group1, "delete_key", "Delete all keys less than DK [def:700]", {'D', "delete_key"});
   args::ValueFlag<int> range_start_key_cmd(group1, "range_start_key", "Starting key of the range query [def:2000]", {'S', "range_start_key"});
@@ -273,6 +274,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->num_inserts = num_inserts_cmd ? args::get(num_inserts_cmd) : 0;
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
   _env->correlation = cor_cmd ? args::get(cor_cmd) : 0;
+  _env->lethe_new = lethe_new_cmd ? args::get(lethe_new_cmd) : 0;
 
   Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
   Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
