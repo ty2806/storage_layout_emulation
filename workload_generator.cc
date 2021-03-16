@@ -27,7 +27,7 @@ using namespace std;
 
 long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100;
 
-int WorkloadGenerator::generateWorkload(long insert_count, long entry_size, int correlation) {
+int WorkloadGenerator::generateWorkload(long long insert_count, long entry_size, int correlation) {
   
   ofstream workload_file;
   workload_file.open("workload.txt");

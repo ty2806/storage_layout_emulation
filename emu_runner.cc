@@ -37,6 +37,7 @@ int Query::iterations_point_query;
 //long inserts(EmuEnv* _env);
 int parse_arguments2(int argc, char *argvx[], EmuEnv* _env);
 void printEmulationOutput(EmuEnv* _env);
+void calculateDeleteTileSize(EmuEnv* _env);
 
 //int run_workload(read, pread, rread, write, update, delete, skew, others);
 int runWorkload(EmuEnv* _env);
@@ -74,7 +75,7 @@ int main(int argc, char *argvx[]) {
       std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
     WorkloadGenerator workload_generator;
-    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);
+    workload_generator.generateWorkload((long long)_env->num_inserts, (long)_env->entry_size, _env->correlation);
 
     
 
@@ -228,7 +229,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   args::ValueFlag<long> buffer_size_cmd(group1, "M", "Memory size (PBE) [def: 2 MB]", {'M', "memory_size"});
   args::ValueFlag<int> delete_tile_size_in_pages_cmd(group1, "delete_tile_size_in_pages", "Size of a delete tile in terms of pages [def: -1]", {'h', "delete_tile_size_in_pages"});
   args::ValueFlag<long> file_size_cmd(group1, "file_size", "file size [def: 256 KB]", {"file_size"});
-  args::ValueFlag<int> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
+  args::ValueFlag<long long> num_inserts_cmd(group1, "#inserts", "The number of unique inserts to issue in the experiment [def: 0]", {'i', "num_inserts"});
   args::ValueFlag<int> cor_cmd(group1, "#correlation", "Correlation between sort key and delete key [def: 0]", {'c', "correlation"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
   args::ValueFlag<int> lethe_new_cmd(group1, "lethe_new", "Same h across tree or different h [0, 1; def:0]", {'X', "lethe_new"});
@@ -275,6 +276,7 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
   _env->correlation = cor_cmd ? args::get(cor_cmd) : 0;
   _env->lethe_new = lethe_new_cmd ? args::get(lethe_new_cmd) : 0;
+  calculateDeleteTileSize(_env);
 
   Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
   Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
@@ -284,6 +286,61 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   Query::iterations_point_query = iterations_point_query_cmd ? args::get(iterations_point_query_cmd) : 100000;
 
   return 0;
+}
+
+void calculateDeleteTileSize(EmuEnv* _env)
+{
+  long fsrd = 1;
+  long fsrq = 10000;
+  long fepq = 100000;
+  long fpq = 50000000;
+
+  float FPR = 0.008193;
+  float temp = _env->num_inserts * (_env->size_ratio - 1) / (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio);
+  int level = ceil(log (temp)/log (_env->size_ratio));
+  long long sum = 0;
+  for (int i = 1; i <= level ; i++)
+  {
+    sum += pow (_env->size_ratio, i);
+  }
+  // cout << sum << endl;
+  double E[30], F[30], G[30];
+  for (int i = 1; i <= level ; i++)
+  {
+    E[i] = pow (_env->size_ratio, i) / sum;
+    // cout << E[i] << endl;
+  }
+  for (int i = 1; i <= level ; i++)
+  {
+    long long sum2 = 0;
+    for (int j = 1; j < i ; j++)
+    {
+      sum2 += pow (_env->size_ratio, j);
+    }
+    F[i] = sum2 * 1.0 / sum;
+    // cout << sum2 << endl;
+    // cout << F[i] << endl;
+  }
+  for (int i = 1; i <= level ; i++)
+  {
+    G[i] = 1 - E[i] - F[i];
+  }
+  for (int i = 1; i <= level ; i++)
+  {
+    double num = _env->buffer_size_in_pages * pow (_env->size_ratio, i) * fsrd;
+    double denum = (fepq + fpq * G[i])*FPR + (FPR/2) * fpq * E[i] + fsrq;
+    double result = pow (num/denum, 0.5);
+    if (result < 1)
+    {
+      _env->variable_delete_tile_size_in_pages[i] = 1;
+    }
+    else
+    {
+      _env->variable_delete_tile_size_in_pages[i] = round(result);
+    }
+    cout << _env->variable_delete_tile_size_in_pages[i] << endl;
+  }
+  // exit(1);
 }
 
 
@@ -301,5 +358,6 @@ void printEmulationOutput(EmuEnv* _env) {
   std::cout << _env->num_inserts ;
 
   std::cout << std::endl;
+
 }
 

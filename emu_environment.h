@@ -35,11 +35,11 @@ public:
   float buffer_flush_threshold;
   float disk_run_flush_threshold;
 
-  int num_inserts;
+  long long num_inserts;
 
   int verbosity;
   int lethe_new;  // 0 for classical lethe, 1 for new lethe
-  int variable_delete_tile_size_in_pages[20] = {-1, 1, 2, 3, 4, 5};
+  int variable_delete_tile_size_in_pages[30] = {-1, 1, 2, 3, 4, 5};
 
   int getDeleteTileSize(int level);
 

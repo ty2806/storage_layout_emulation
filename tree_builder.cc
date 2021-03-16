@@ -183,6 +183,7 @@ int DiskMetaFile::getTotalLevelCount()
       return level_count;
     }
   }
+  return level_count;
 }
 
 int DiskMetaFile::checkOverlapping(SSTFile *file, int level)
@@ -287,6 +288,7 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
   {
     return 1;
   }
+  // return 0;
 }
 
 int DiskMetaFile::setSSTFileHead(SSTFile *arg, int level_to_flush_in)
