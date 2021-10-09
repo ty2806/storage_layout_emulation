@@ -26,7 +26,11 @@ EmuEnv::EmuEnv()
 
   verbosity = 0;
   lethe_new = 0;  // 0 for classical lethe, 1 for new lethe
-  
+  srd_count = 1;
+  epq_count = 1;
+  pq_count = 1;
+  srq_count = 1;
+  level_count = 1;
 }
 int EmuEnv::getDeleteTileSize(int level)
 {

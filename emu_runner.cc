@@ -72,12 +72,16 @@ int main(int argc, char *argvx[]) {
   if (_env->num_inserts > 0) 
   {
     // if (_env->verbosity >= 1) 
-      std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+    std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
     WorkloadGenerator workload_generator;
+<<<<<<< HEAD
+    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+=======
     workload_generator.generateWorkload((long long)_env->num_inserts, (long)_env->entry_size, _env->correlation);
 
     
+>>>>>>> e9084366c9b41e68d1e43df7dc52598dedbac668
 
     int only_file_meta_data = 0;
 
@@ -233,6 +237,10 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   args::ValueFlag<int> cor_cmd(group1, "#correlation", "Correlation between sort key and delete key [def: 0]", {'c', "correlation"});
   args::ValueFlag<int> verbosity_cmd(group1, "verbosity", "The verbosity level of execution [0,1,2; def:0]", {'V', "verbosity"});
   args::ValueFlag<int> lethe_new_cmd(group1, "lethe_new", "Same h across tree or different h [0, 1; def:0]", {'X', "lethe_new"});
+  args::ValueFlag<int> SRD_cmd(group1, "SRD", "Count of secondary range delete [def:1]", {'I', "SRD"});
+  args::ValueFlag<int> EPQ_cmd(group1, "EPQ", "Count of empty point queries [def:1000000]", {'J', "EPQ"});
+  args::ValueFlag<int> PQ_cmd(group1, "PQ", "Count of non-empty point queries [def:1000000]", {'K', "PQ"});
+  args::ValueFlag<int> SRQ_cmd(group1, "SRQ", "Count of short range queries [def:1]", {'L', "SRQ"});
   
   args::ValueFlag<int> delete_key_cmd(group1, "delete_key", "Delete all keys less than DK [def:700]", {'D', "delete_key"});
   args::ValueFlag<int> range_start_key_cmd(group1, "range_start_key", "Starting key of the range query [def:2000]", {'S', "range_start_key"});
@@ -276,7 +284,64 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
   _env->correlation = cor_cmd ? args::get(cor_cmd) : 0;
   _env->lethe_new = lethe_new_cmd ? args::get(lethe_new_cmd) : 0;
+<<<<<<< HEAD
+  _env->srd_count = SRD_cmd ? args::get(SRD_cmd) : 1;
+  _env->epq_count = EPQ_cmd ? args::get(EPQ_cmd) : 1000000;
+  _env->pq_count = PQ_cmd ? args::get(PQ_cmd) : 1000000;
+  _env->srq_count = SRQ_cmd ? args::get(SRQ_cmd) : 10000;  
+
+
+  // calculation of Kiwi++ (following desmos)
+  float num = (_env->num_inserts * (_env->size_ratio - 1));
+  float denum = (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio);
+  _env->level_count = ceil(log(num/denum)/log(_env->size_ratio));
+  float E[20] = {-1};
+  float F[20] = {-1};
+  float G[20] = {-1};
+  float R[20] = {-1};
+  float temp_sum = 0;
+
+  for (int j = 1; j <= _env->level_count; j++)
+  {
+    temp_sum += pow(_env->size_ratio, j);
+  }
+  for (int i = 1; i <= _env->level_count; i++)
+  {
+    E[i] = pow(_env->size_ratio, i)/temp_sum;
+  }
+  for (int i = 1; i <= _env->level_count; i++)
+  {
+    float tempsum2 = 0;
+    for (int j = 1; j <= i - 1; j++)
+    {
+      tempsum2 += pow(_env->size_ratio, j);
+    }
+    F[i] = tempsum2/temp_sum;
+  }
+  for (int i = 1; i <= _env->level_count; i++)
+  {
+    G[i] = 1-E[i]-F[i];
+  }
+  float phi = 0.0081925;
+  for (int i = 1; i <= _env->level_count; i++)
+  {
+    R[i] = (pow(_env->size_ratio,(_env->size_ratio/(_env->size_ratio - 1))) * phi)/(pow(_env->size_ratio,_env->level_count + 1 - i));
+  }
+
+  for (int i = 1; i <= _env->level_count; i++)
+  {
+    float num2 = _env->buffer_size_in_pages * pow(_env->size_ratio, i) * _env->srd_count;
+    float denum2 = ((_env->epq_count + _env->pq_count * G[i]) * R[i]) + ((R[i] * _env->pq_count * E[i]) / 2) + _env->srq_count;
+    _env->variable_delete_tile_size_in_pages[i] = round (pow(num2/denum2, 0.5));
+    if (_env->variable_delete_tile_size_in_pages[i] == 0)
+      _env->variable_delete_tile_size_in_pages[i] = 1;
+    cout << _env->variable_delete_tile_size_in_pages[i] << " " << endl;
+  }
+
+  exit(1);
+=======
   calculateDeleteTileSize(_env);
+>>>>>>> e9084366c9b41e68d1e43df7dc52598dedbac668
 
   Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
   Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
