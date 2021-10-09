@@ -75,13 +75,7 @@ int main(int argc, char *argvx[]) {
     std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
     WorkloadGenerator workload_generator;
-<<<<<<< HEAD
     workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
-=======
-    workload_generator.generateWorkload((long long)_env->num_inserts, (long)_env->entry_size, _env->correlation);
-
-    
->>>>>>> e9084366c9b41e68d1e43df7dc52598dedbac668
 
     int only_file_meta_data = 0;
 
@@ -284,13 +278,25 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
   _env->verbosity = verbosity_cmd ? args::get(verbosity_cmd) : 0;
   _env->correlation = cor_cmd ? args::get(cor_cmd) : 0;
   _env->lethe_new = lethe_new_cmd ? args::get(lethe_new_cmd) : 0;
-<<<<<<< HEAD
+
   _env->srd_count = SRD_cmd ? args::get(SRD_cmd) : 1;
   _env->epq_count = EPQ_cmd ? args::get(EPQ_cmd) : 1000000;
   _env->pq_count = PQ_cmd ? args::get(PQ_cmd) : 1000000;
-  _env->srq_count = SRQ_cmd ? args::get(SRQ_cmd) : 10000;  
+  _env->srq_count = SRQ_cmd ? args::get(SRQ_cmd) : 10000;
+  calculateDeleteTileSize(_env);
 
+  Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
+  Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
+  Query::range_end_key = range_end_key_cmd ? args::get(range_end_key_cmd) : 5000;
+  Query::sec_range_start_key = sec_range_start_key_cmd ? args::get(sec_range_start_key_cmd) : 200;
+  Query::sec_range_end_key = sec_range_end_key_cmd ? args::get(sec_range_end_key_cmd) : 500;
+  Query::iterations_point_query = iterations_point_query_cmd ? args::get(iterations_point_query_cmd) : 100000;
 
+  return 0;
+}
+
+void calculateDeleteTileSize(EmuEnv* _env)
+{
   // calculation of Kiwi++ (following desmos)
   float num = (_env->num_inserts * (_env->size_ratio - 1));
   float denum = (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio);
@@ -337,75 +343,6 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
       _env->variable_delete_tile_size_in_pages[i] = 1;
     cout << _env->variable_delete_tile_size_in_pages[i] << " " << endl;
   }
-
-  exit(1);
-=======
-  calculateDeleteTileSize(_env);
->>>>>>> e9084366c9b41e68d1e43df7dc52598dedbac668
-
-  Query::delete_key = delete_key_cmd ? args::get(delete_key_cmd) : 700;
-  Query::range_start_key = range_start_key_cmd ? args::get(range_start_key_cmd) : 2000;
-  Query::range_end_key = range_end_key_cmd ? args::get(range_end_key_cmd) : 5000;
-  Query::sec_range_start_key = sec_range_start_key_cmd ? args::get(sec_range_start_key_cmd) : 200;
-  Query::sec_range_end_key = sec_range_end_key_cmd ? args::get(sec_range_end_key_cmd) : 500;
-  Query::iterations_point_query = iterations_point_query_cmd ? args::get(iterations_point_query_cmd) : 100000;
-
-  return 0;
-}
-
-void calculateDeleteTileSize(EmuEnv* _env)
-{
-  long fsrd = 1;
-  long fsrq = 10000;
-  long fepq = 100000;
-  long fpq = 50000000;
-
-  float FPR = 0.008193;
-  float temp = _env->num_inserts * (_env->size_ratio - 1) / (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio);
-  int level = ceil(log (temp)/log (_env->size_ratio));
-  long long sum = 0;
-  for (int i = 1; i <= level ; i++)
-  {
-    sum += pow (_env->size_ratio, i);
-  }
-  // cout << sum << endl;
-  double E[30], F[30], G[30];
-  for (int i = 1; i <= level ; i++)
-  {
-    E[i] = pow (_env->size_ratio, i) / sum;
-    // cout << E[i] << endl;
-  }
-  for (int i = 1; i <= level ; i++)
-  {
-    long long sum2 = 0;
-    for (int j = 1; j < i ; j++)
-    {
-      sum2 += pow (_env->size_ratio, j);
-    }
-    F[i] = sum2 * 1.0 / sum;
-    // cout << sum2 << endl;
-    // cout << F[i] << endl;
-  }
-  for (int i = 1; i <= level ; i++)
-  {
-    G[i] = 1 - E[i] - F[i];
-  }
-  for (int i = 1; i <= level ; i++)
-  {
-    double num = _env->buffer_size_in_pages * pow (_env->size_ratio, i) * fsrd;
-    double denum = (fepq + fpq * G[i])*FPR + (FPR/2) * fpq * E[i] + fsrq;
-    double result = pow (num/denum, 0.5);
-    if (result < 1)
-    {
-      _env->variable_delete_tile_size_in_pages[i] = 1;
-    }
-    else
-    {
-      _env->variable_delete_tile_size_in_pages[i] = round(result);
-    }
-    cout << _env->variable_delete_tile_size_in_pages[i] << endl;
-  }
-  // exit(1);
 }
 
 

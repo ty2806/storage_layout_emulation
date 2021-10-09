@@ -39,7 +39,7 @@ public:
 
   int verbosity;
   int lethe_new;  // 0 for classical lethe, 1 for new lethe
-<<<<<<< HEAD
+
   int srd_count;
   int epq_count;
   int pq_count;
@@ -47,9 +47,6 @@ public:
   int level_count;
 
   int variable_delete_tile_size_in_pages[20] = {-1, 1, 2, 3, 4, 5};
-=======
-  int variable_delete_tile_size_in_pages[30] = {-1, 1, 2, 3, 4, 5};
->>>>>>> e9084366c9b41e68d1e43df7dc52598dedbac668
 
   int getDeleteTileSize(int level);
 
