@@ -326,7 +326,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
   }
   for (int i = 1; i <= _env->level_count; i++)
   {
-    G[i] = 1-E[i]-F[i];
+    G[i] = 1 - E[i] - F[i];
   }
   float phi = 0.0081925;
   for (int i = 1; i <= _env->level_count; i++)
@@ -337,11 +337,11 @@ void calculateDeleteTileSize(EmuEnv* _env)
   for (int i = 1; i <= _env->level_count; i++)
   {
     float num2 = _env->buffer_size_in_pages * pow(_env->size_ratio, i) * _env->srd_count;
-    float denum2 = ((_env->epq_count + _env->pq_count * G[i]) * R[i]) + ((R[i] * _env->pq_count * E[i]) / 2) + _env->srq_count;
+    float denum2 = ((_env->epq_count + (_env->pq_count * G[i])) * R[i]) + ((R[i] * _env->pq_count * E[i]) / 2) + _env->srq_count;
     _env->variable_delete_tile_size_in_pages[i] = round (pow(num2/denum2, 0.5));
     if (_env->variable_delete_tile_size_in_pages[i] == 0)
       _env->variable_delete_tile_size_in_pages[i] = 1;
-    cout << _env->variable_delete_tile_size_in_pages[i] << " " << endl;
+    // cout << _env->variable_delete_tile_size_in_pages[i] << " " << endl;
   }
 }
 
