@@ -193,6 +193,42 @@ int Query::point_query_experiment()
 
 }
 
+int Query::new_point_query_experiment ()
+{
+  EmuEnv* _env = EmuEnv::getInstance();
+  fstream fout4;
+  fout4.open("out_point_nonempty.csv", ios::out | ios::app);
+
+  counter = 0;
+  sum_page_id = 0;
+  found_count = 0;
+  not_found_count = 0;
+  for (int i = 0; i < _env->pq_count ; i++) {
+    unsigned long long randomKey = rand() % _env->num_inserts;
+    //std::cout << "Generated Random Key" << randomKey << std::endl;
+    randomKey = WorkloadGenerator::inserted_keys[randomKey];
+    int pageId = Query::pointQuery(randomKey);
+    if(pageId < 0) 
+    {
+      not_found_count++;
+    }
+    else 
+    {
+      //cout << pageId << endl;
+      sum_page_id += pageId;
+      found_count++;
+    }
+    counter++;
+
+    if(!(counter % (_env->pq_count/100))){
+      // std::cout << "baal " << iterations << " " << counter;
+      showProgress(_env->pq_count, counter);
+    }
+  }
+  fout4 << _env->delete_tile_size_in_pages << "," << _env->pq_count << "," << Query::sum_page_id << "," << Query::sum_page_id/(Query::found_count * 1.0) << "," << Query::found_count << "," << Query::not_found_count << endl;
+  fout4.close();
+}
+
 int Query::rangeQuery (int lowerlimit, int upperlimit) {
 
   range_occurances = 0;

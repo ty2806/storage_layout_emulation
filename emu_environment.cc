@@ -25,7 +25,7 @@ EmuEnv::EmuEnv()
   num_inserts = 0;
 
   verbosity = 0;
-  lethe_new = 0;  // 0 for classical lethe, 1 for new lethe
+  lethe_new = 0;  // 0 for classical lethe, 1 for optimal Kiwi, 2 for Kiwi++
   srd_count = 1;
   epq_count = 1;
   pq_count = 1;
@@ -34,7 +34,7 @@ EmuEnv::EmuEnv()
 }
 int EmuEnv::getDeleteTileSize(int level)
 {
-  if (lethe_new == 1)
+  if (lethe_new == 2)
   {
     return variable_delete_tile_size_in_pages[level];
   }

@@ -25,7 +25,8 @@ using namespace std;
  * 
  */
 
-long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100;
+long long WorkloadGenerator::KEY_DOMAIN_SIZE = 100000000;
+vector < long > WorkloadGenerator::inserted_keys;
 
 int WorkloadGenerator::generateWorkload(long long insert_count, long entry_size, int correlation) {
   
@@ -58,6 +59,7 @@ int WorkloadGenerator::generateWorkload(long long insert_count, long entry_size,
 
 string WorkloadGenerator::generateKey() {
   unsigned long randomness = rand() %  KEY_DOMAIN_SIZE;
+  WorkloadGenerator::inserted_keys.push_back(randomness);
   string key = std::to_string(randomness);
   return key;
 }

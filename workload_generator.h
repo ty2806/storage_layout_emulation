@@ -20,6 +20,7 @@ private:
 
 public:
   static long long KEY_DOMAIN_SIZE;
+  static vector < long > inserted_keys;
 
   static int generateWorkload(long long insert_count, long entry_size, int correlation);
   static string generateKey();

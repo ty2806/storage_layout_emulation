@@ -43,5 +43,6 @@ public:
     static int sec_range_query_experiment();
     static int delete_query_experiment();
     static int point_query_experiment();
+    static int new_point_query_experiment();
 
 };
