@@ -111,6 +111,9 @@ int main(int argc, char *argvx[]) {
     {
       int s = runWorkload(_env);
       std::cout << "Insert complete ... " << std::endl << std::flush; 
+      DiskMetaFile::printAllEntries(only_file_meta_data);
+      MemoryBuffer::getCurrentBufferStatistics();
+      DiskMetaFile::getMetaStatistics();
 
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
       {
@@ -206,6 +209,9 @@ int main(int argc, char *argvx[]) {
     else if (_env->lethe_new == 1 || _env->lethe_new == 2)
     {
       int s = runWorkload(_env);
+      DiskMetaFile::printAllEntries(only_file_meta_data);
+      MemoryBuffer::getCurrentBufferStatistics();
+      DiskMetaFile::getMetaStatistics();
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
       {
         DiskMetaFile::printAllEntries(only_file_meta_data);
@@ -265,9 +271,9 @@ int runWorkload(EmuEnv* _env) {
     }
     instruction='\0';
     counter++;
-    if(!(counter % (_env->num_inserts/100))){
-      showProgress(_env->num_inserts, counter);
-    }
+    // if(!(counter % (_env->num_inserts/100))){
+    //   showProgress(_env->num_inserts, counter);
+    // }
   }
 
 return 1;
@@ -357,8 +363,8 @@ int parse_arguments2(int argc,char *argvx[], EmuEnv* _env) {
 void calculateDeleteTileSize(EmuEnv* _env)
 {
   // calculation of Kiwi++ (following desmos)
-  float num = (_env->num_inserts * (_env->size_ratio - 1));
-  float denum = (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio);
+  float num = (_env->num_inserts * (_env->size_ratio - 1) * 1.0);
+  float denum = (_env->buffer_size_in_pages * _env->entries_per_page * _env->size_ratio * 1.0);
   _env->level_count = ceil(log(num/denum)/log(_env->size_ratio));
   float E[20] = {-1};
   float F[20] = {-1};
@@ -372,7 +378,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
   }
   for (int i = 1; i <= _env->level_count; i++)
   {
-    E[i] = pow(_env->size_ratio, i)/temp_sum;
+    E[i] = pow(_env->size_ratio, i)/(temp_sum * 1.0);
   }
   for (int i = 1; i <= _env->level_count; i++)
   {
@@ -381,7 +387,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
     {
       tempsum2 += pow(_env->size_ratio, j);
     }
-    F[i] = tempsum2/temp_sum;
+    F[i] = (tempsum2 * 1.0)/temp_sum;
   }
   for (int i = 1; i <= _env->level_count; i++)
   {
@@ -390,7 +396,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
   float phi = 0.0081925;
   for (int i = 1; i <= _env->level_count; i++)
   {
-    R[i] = (pow(_env->size_ratio,(_env->size_ratio/(_env->size_ratio - 1))) * phi)/(pow(_env->size_ratio,_env->level_count + 1 - i));
+    R[i] = (pow((_env->size_ratio * 1.0),((_env->size_ratio * 1.0)/(_env->size_ratio - 1))) * phi)/(pow(_env->size_ratio,_env->level_count + 1 - i));
   } 
 
   for (int i = 1; i <= _env->level_count; i++)
@@ -405,7 +411,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
   if (_env->lethe_new == 1)
   {
     // Optimal h for Kiwi
-    float phi_opt = ((pow(_env->size_ratio,(_env->size_ratio/(_env->size_ratio-1))))/_env->size_ratio)*phi;
+    float phi_opt = ((pow(_env->size_ratio,(_env->size_ratio*1.0/(_env->size_ratio-1)*1.0)))/_env->size_ratio)*phi;
     float num_opt = (_env->srd_count * _env->num_inserts * 1.0)/_env->entries_per_page;
     float denum_opt = ((_env->epq_count + _env->pq_count) * phi_opt * _env->level_count) + (_env->level_count * _env->srq_count);
     _env->delete_tile_size_in_pages = round (pow(num_opt/denum_opt, 0.5));

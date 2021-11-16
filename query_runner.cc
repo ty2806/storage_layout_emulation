@@ -57,7 +57,7 @@ inline void showProgress(const uint32_t &workload_size, const uint32_t &counter)
   }
 }
 
-int Query::checkDeleteCount (int deletekey)
+void Query::checkDeleteCount (int deletekey)
 {
   Query::complete_delete_count = 0;
   Query::not_possible_delete_count = 0;
@@ -97,7 +97,7 @@ int Query::checkDeleteCount (int deletekey)
   // std::cout << std::endl;
 }
 
-int Query::delete_query_experiment()
+void Query::delete_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   // int selectivity[3] = {7, 30, 60};
@@ -130,7 +130,7 @@ int Query::delete_query_experiment()
   fout1.close();
 }
 
-int Query::range_query_experiment()
+void Query::range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
@@ -159,7 +159,7 @@ int Query::range_query_experiment()
   fout2.close();
 }
 
-int Query::sec_range_query_experiment()
+void Query::sec_range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int range_iterval_1, range_query_start_1, range_query_end_1;
@@ -180,7 +180,7 @@ int Query::sec_range_query_experiment()
   fout3.close();
 }
 
-int Query::point_query_experiment()
+void Query::point_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int point_query_iteration1 = 100000;
@@ -193,7 +193,7 @@ int Query::point_query_experiment()
 
 }
 
-int Query::new_point_query_experiment ()
+void Query::new_point_query_experiment ()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   fstream fout4;
@@ -229,7 +229,7 @@ int Query::new_point_query_experiment ()
   fout4.close();
 }
 
-int Query::rangeQuery (int lowerlimit, int upperlimit) {
+void Query::rangeQuery (int lowerlimit, int upperlimit) {
 
   range_occurances = 0;
 
@@ -273,7 +273,7 @@ int Query::rangeQuery (int lowerlimit, int upperlimit) {
   // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
 }
 
-int Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
+void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
 
   secondary_range_occurances = 0;
 
@@ -352,7 +352,7 @@ int Query::pointQuery (int key)
   return -1;
 }
 
-int Query::pointQueryRunner (int iterations)
+void Query::pointQueryRunner (int iterations)
 {
   counter = 0;
   sum_page_id = 0;

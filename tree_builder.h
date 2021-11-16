@@ -55,7 +55,7 @@ namespace tree_builder {
   long min_delete_key;
   long max_delete_key;
   vector < Page > page_vector;
-  static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_size_in_pages);
+  static struct vector<DeleteTile> createNewDeleteTiles(int delete_tile_count_in_a_file, int level_to_flush_in);
   
   };
 
@@ -95,7 +95,7 @@ namespace tree_builder {
     static int setSSTFileHead(SSTFile* arg, int level);
     static SSTFile* getSSTFileHead(int level);
 
-    static int getMetaStatistics();
+    static void getMetaStatistics();
     static int printAllEntries(int only_file_meta_data);
     static int getTotalPageCount();
     static int clearAllEntries();

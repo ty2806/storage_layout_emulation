@@ -68,7 +68,7 @@ int Utility::minInt(int a, int b)
   }
 }
 
-int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
+void Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
   
@@ -194,10 +194,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
           for (int j = 0; j < vector_to_populate_file.size(); ++j)
             std::cout << "< " << vector_to_populate_file[j].first.first << ",  " << vector_to_populate_file[j].first.second << " >"
                       << "\t";
-        }
-          
-        
-        
+        }                          
 
         SSTFile *new_file = SSTFile::createNewSSTFile(level_to_flush_in);
         int status = SSTFile::PopulateFile(new_file, vector_to_populate_file, level_to_flush_in);
@@ -228,7 +225,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
   }
 }
 
-int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
+void Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
   SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
@@ -301,7 +298,6 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
       std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
 
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
-    int file_count = vector_to_compact.size() / entries_per_file;
     
     if (MemoryBuffer::verbosity == 1)   //UNCOMMENT
     {
@@ -349,7 +345,6 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
     MemoryBuffer::buffer.push_back(make_pair(make_pair(sortkey, deletekey), value));
     //std::cout << "key inserted : " << key << std::endl;
     //MemoryBuffer::getCurrentBufferStatistics();
-
     total_insert_count++;
     buffer_insert_count++;
   }

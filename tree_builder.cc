@@ -91,6 +91,7 @@ int MemoryBuffer::getCurrentBufferStatistics()
   std::cout << "Current buffer entry count = " << current_buffer_entry_count << std::endl;
   std::cout << "Current buffer size = " << current_buffer_size << std::endl;
   std::cout << "Current buffer saturation = " << current_buffer_saturation << std::endl;
+  std::cout << "Update count = " << WorkloadExecutor::buffer_update_count << std::endl;
   std::cout << "Total buffer flushes  = " << buffer_flush_count << std::endl;
   std::cout << "********************************************************" << std::endl;
   return 1;
@@ -284,11 +285,7 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
     Utility::sortAndWrite(vector_to_compact, level + 1);
 
   }
-  else
-  {
-    return 1;
-  }
-  // return 0;
+  return 1;
 }
 
 int DiskMetaFile::setSSTFileHead(SSTFile *arg, int level_to_flush_in)
@@ -311,7 +308,10 @@ int SSTFile::PopulateDeleteTile(SSTFile *file, vector<pair<pair<long, long>, str
 
   EmuEnv *_env = EmuEnv::getInstance();
   // int page_count = _env->delete_tile_size_in_pages;
-  int page_count = _env->getDeleteTileSize(level_to_flush_in);
+  // int page_count = _env->getDeleteTileSize(level_to_flush_in);
+  int page_count;
+  page_count = file->tile_vector[deletetileid].page_vector.size();
+
   int entries_per_page = _env->entries_per_page;
   for (int i = 0; i < page_count; ++i)
   {
@@ -363,7 +363,7 @@ int SSTFile::PopulateFile(SSTFile *file, vector<pair<pair<long, long>, string>> 
   EmuEnv *_env = EmuEnv::getInstance();
   // int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->delete_tile_size_in_pages);
   // int entries_per_delete_tile = _env->delete_tile_size_in_pages * _env->entries_per_page;
-  int delete_tile_count = ceil(_env->buffer_size_in_pages / _env->getDeleteTileSize(level_to_flush_in));
+  int delete_tile_count = ceil((_env->buffer_size_in_pages * 1.0) / (_env->getDeleteTileSize(level_to_flush_in) * 1.0));
   int entries_per_delete_tile = _env->getDeleteTileSize(level_to_flush_in) * _env->entries_per_page;
   //cout<<"Vector Size: "<<vector_to_populate_file.size()<<std::endl;
 
@@ -411,17 +411,32 @@ vector<Page> Page::createNewPages(int page_count)
   return pages;
 }
 
-vector<DeleteTile> DeleteTile::createNewDeleteTiles(int delete_tile_size_in_pages)
+vector<DeleteTile> DeleteTile::createNewDeleteTiles(int delete_tile_count_in_a_file, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
-  vector<DeleteTile> delete_tiles(delete_tile_size_in_pages);
+  vector<DeleteTile> delete_tiles(delete_tile_count_in_a_file);
   for (int i = 0; i < delete_tiles.size(); i++)
   {
     delete_tiles[i].max_sort_key = -1;
     delete_tiles[i].min_sort_key = -1;
     delete_tiles[i].max_delete_key = -1;
     delete_tiles[i].min_delete_key = -1;
-    delete_tiles[i].page_vector = Page::createNewPages(_env->buffer_size_in_pages);
+    if (_env->buffer_size_in_pages % _env->getDeleteTileSize(level_to_flush_in) == 0)
+    {
+      delete_tiles[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
+    }
+    else
+    {
+      if ( i == delete_tiles.size() - 1)
+      {
+        delete_tiles[i].page_vector = Page::createNewPages(_env->buffer_size_in_pages % _env->getDeleteTileSize(level_to_flush_in));
+      }
+      else
+      {
+        delete_tiles[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
+      }
+
+    }
   }
 
   return delete_tiles;
@@ -438,16 +453,30 @@ SSTFile *SSTFile::createNewSSTFile(int level_to_flush_in)
   new_file->min_delete_key = -1;
 
   // int delete_tile_count_in_a_file = _env->buffer_size_in_pages / _env->delete_tile_size_in_pages;
-  int delete_tile_count_in_a_file = _env->buffer_size_in_pages / _env->getDeleteTileSize(level_to_flush_in);
+  int delete_tile_count_in_a_file = ceil((_env->buffer_size_in_pages * 1.0) / (_env->getDeleteTileSize(level_to_flush_in) * 1.0));
 
-  new_file->tile_vector = DeleteTile::createNewDeleteTiles(delete_tile_count_in_a_file);
+  new_file->tile_vector = DeleteTile::createNewDeleteTiles(delete_tile_count_in_a_file, level_to_flush_in);
 
-  for (int i = 0; i < new_file->tile_vector.size(); ++i)
-  {
-    // new_file->tile_vector[i].page_vector = Page::createNewPages(_env->delete_tile_size_in_pages);
-    new_file->tile_vector[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
-  }
-    
+  // Comment For loop
+  // for (int i = 0; i < new_file->tile_vector.size(); ++i)
+  // {
+  //   // new_file->tile_vector[i].page_vector = Page::createNewPages(_env->delete_tile_size_in_pages);
+  //   if (i == new_file->tile_vector.size() - 1)
+  //   {
+  //     if (_env->buffer_size_in_pages % _env->getDeleteTileSize(level_to_flush_in) == 0)
+  //     {
+  //       new_file->tile_vector[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
+  //     }
+  //     else
+  //     {
+  //       new_file->tile_vector[i].page_vector = Page::createNewPages(_env->buffer_size_in_pages % _env->getDeleteTileSize(level_to_flush_in));
+  //     }
+  //   }
+  //   else
+  //   {
+  //     new_file->tile_vector[i].page_vector = Page::createNewPages(_env->getDeleteTileSize(level_to_flush_in));
+  //   }
+  // }
 
   new_file->file_level = level_to_flush_in;
   new_file->next_file_ptr = NULL;
@@ -540,7 +569,7 @@ int MemoryBuffer::printBufferEntries()
   return 1;
 }
 
-int DiskMetaFile::getMetaStatistics()
+void DiskMetaFile::getMetaStatistics()
 {
   long total_entry_count = 0;
   std::cout << "**************************** PRINTING META FILE STATISTICS ****************************" << std::endl;
@@ -618,10 +647,12 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
     std::cout << "\t\t\t\tBuffer is currently empty." << std::endl;
   }
   else {    //UNCOMMENT
-    for (int i = 0; i < MemoryBuffer::current_buffer_entry_count; i++) {
-      std::cout << "\t\t\t\tEntry : " << i << " (Sort_Key : " << MemoryBuffer::buffer[i].first.first
-                << ", Delete_Key : " << MemoryBuffer::buffer[i].first.second << ")" << std::endl;
-    }
+    std::cout << "\t\t\t\tBuffer entry count: " << MemoryBuffer::current_buffer_entry_count << std::endl;
+    // Uncomment the following to print all entries
+    // for (int i = 0; i < MemoryBuffer::current_buffer_entry_count; i++) {
+    //   std::cout << "\t\t\t\tEntry : " << i << " (Sort_Key : " << MemoryBuffer::buffer[i].first.first
+    //             << ", Delete_Key : " << MemoryBuffer::buffer[i].first.second << ")" << std::endl;
+    // }
   }
 
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
@@ -653,11 +684,13 @@ int DiskMetaFile::printAllEntries(int only_file_meta_data)
             std::cout << "\033[1;33m\t\t\tPage : " << l << " (Min_Sort_Key : " << page.min_sort_key
                       << ", Max_Sort_Key : " << page.max_sort_key << ", Min_Delete_Key : " << page.min_delete_key << ", Max_Delete_Key : " << page.max_delete_key << ")"
                       << "\033[0m" << std::endl;
-            for (int m = 0; m < page.kv_vector.size(); m++)
-            {
-              std::cout << "\t\t\t\tEntry : " << m << " (Sort_Key : " << page.kv_vector[m].first.first
-                        << ", Delete_Key : " << page.kv_vector[m].first.second << ")" << std::endl;
-            }
+            std::cout << "\t\t\t\tEntry count: " << page.kv_vector.size() << std::endl;
+            // Uncomment the following to print all entries
+            // for (int m = 0; m < page.kv_vector.size(); m++)
+            // {
+            //   std::cout << "\t\t\t\tEntry : " << m << " (Sort_Key : " << page.kv_vector[m].first.first
+            //             << ", Delete_Key : " << page.kv_vector[m].first.second << ")" << std::endl;
+            // }
           }
         }
       }

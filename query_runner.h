@@ -33,16 +33,16 @@ public:
     static long found_count;
     static long not_found_count;
 
-    static int checkDeleteCount (int deletekey);
+    static void checkDeleteCount (int deletekey);
     static int pointQuery (int key);
-    static int pointQueryRunner (int iterations);
-    static int rangeQuery (int lowerlimit, int upperlimit);
-    static int secondaryRangeQuery (int lowerlimit, int upperlimit);
+    static void pointQueryRunner (int iterations);
+    static void rangeQuery (int lowerlimit, int upperlimit);
+    static void secondaryRangeQuery (int lowerlimit, int upperlimit);
 
-    static int range_query_experiment();
-    static int sec_range_query_experiment();
-    static int delete_query_experiment();
-    static int point_query_experiment();
-    static int new_point_query_experiment();
+    static void range_query_experiment();
+    static void sec_range_query_experiment();
+    static void delete_query_experiment();
+    static void point_query_experiment();
+    static void new_point_query_experiment();
 
 };
