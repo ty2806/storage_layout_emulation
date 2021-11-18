@@ -217,7 +217,6 @@ void Query::new_point_query_experiment ()
     int pageId = Query::pointQuery(randomKey);
     if(pageId < 0) 
     {
-      cout << "Not Found Key: " << randomKey << endl;
       not_found_count++;
     }
     else 

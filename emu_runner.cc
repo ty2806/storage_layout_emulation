@@ -417,6 +417,8 @@ void calculateDeleteTileSize(EmuEnv* _env)
     float num_opt = (_env->srd_count * _env->num_inserts * 1.0)/_env->entries_per_page;
     float denum_opt = ((_env->epq_count + _env->pq_count) * phi_opt * _env->level_count) + (_env->level_count * _env->srq_count);
     _env->delete_tile_size_in_pages = round (pow(num_opt/denum_opt, 0.5));
+    if (_env->delete_tile_size_in_pages == 0)
+      _env->delete_tile_size_in_pages = 1;
     if (_env->delete_tile_size_in_pages > _env->buffer_size_in_pages)
       _env->delete_tile_size_in_pages = _env->buffer_size_in_pages;
   }
