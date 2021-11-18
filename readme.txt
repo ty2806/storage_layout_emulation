@@ -28,7 +28,8 @@ Lethe+
 
 X: Same h across tree or different h [0 for classical lethe, 1 for Kiwi-optimal, 2 for Kiwi+]
 
-./emu_runner -i 5000000 -P 8 -B 128 -E 1024 -T 10 -X 2 -I 1 -J 1000000 -K 1000000 -L 10000
+./emu_runner -i 5000000 -P 256 -B 4 -E 1024 -T 10 -X 2 -I 1 -J 1000000 -K 1000000 -L 1000
+./emu_runner -i 500 -P 8 -B 4 -E 1024 -T 2 -X 2 -I 1 -J 100 -K 100 -L 2
 
 I = 1 [count of secondary range delete query]
 J = 1000000 [count of empty point queries]

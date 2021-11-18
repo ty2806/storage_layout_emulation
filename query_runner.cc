@@ -75,14 +75,17 @@ void Query::checkDeleteCount (int deletekey)
         for (int l = 0; l < delete_tile.page_vector.size(); l++)
         {
           Page page = delete_tile.page_vector[l];
-          if (page.max_delete_key < deletekey) {
+          if (page.max_delete_key > 0)
+          {
+            if (page.max_delete_key < deletekey) {
             complete_delete_count++;
-          }
-          else if (page.min_delete_key > deletekey) {
-            not_possible_delete_count++;
-          }
-          else {
-            partial_delete_count++;
+            }
+            else if (page.min_delete_key > deletekey) {
+              not_possible_delete_count++;
+            }
+            else {
+              partial_delete_count++;
+            }
           }
         }
       }
@@ -118,6 +121,7 @@ void Query::delete_query_experiment()
 
   fstream fout1;
   fout1.open("out_delete.csv", ios::out | ios::app);
+  fout1 << "Delete tile size" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
 
   for (int i = 0 ; i < 20; i++)
   {
@@ -138,6 +142,7 @@ void Query::range_query_experiment()
 
   fstream fout2;
   fout2.open("out_range.csv", ios::out | ios::app);
+  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
 
   for (int i = 0; i < 35 ; i++ )
   {
@@ -167,6 +172,7 @@ void Query::sec_range_query_experiment()
 
   fstream fout3;
   fout3.open("out_sec_range.csv", ios::out | ios::app);
+  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
 
   for (int i = 0; i < 35 ; i++ )
   {
@@ -198,6 +204,7 @@ void Query::new_point_query_experiment ()
   EmuEnv* _env = EmuEnv::getInstance();
   fstream fout4;
   fout4.open("out_point_nonempty.csv", ios::out | ios::app);
+  fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
 
   counter = 0;
   sum_page_id = 0;
@@ -210,6 +217,7 @@ void Query::new_point_query_experiment ()
     int pageId = Query::pointQuery(randomKey);
     if(pageId < 0) 
     {
+      cout << "Not Found Key: " << randomKey << endl;
       not_found_count++;
     }
     else 
@@ -221,7 +229,6 @@ void Query::new_point_query_experiment ()
     counter++;
 
     if(!(counter % (_env->pq_count/100))){
-      // std::cout << "baal " << iterations << " " << counter;
       showProgress(_env->pq_count, counter);
     }
   }
@@ -256,11 +263,14 @@ void Query::rangeQuery (int lowerlimit, int upperlimit) {
             for (int l = 0; l < delete_tile.page_vector.size(); l++)
             {
               Page page = delete_tile.page_vector[l];
-              if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
+              if (page.min_sort_key > 0)
+              {
+                if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
                 continue;
-              }
-              else {
-                range_occurances++;
+                }
+                else {
+                  range_occurances++;
+                }
               }
             }
           }
@@ -298,11 +308,14 @@ void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
             for (int l = 0; l < delete_tile.page_vector.size(); l++)
             {
               Page page = delete_tile.page_vector[l];
-              if (page.min_delete_key > upperlimit || page.max_delete_key < lowerlimit) {
-                continue;
-              }
-              else {
-                secondary_range_occurances++;
+              if (page.min_delete_key > 0)
+              {
+                if (page.min_delete_key > upperlimit || page.max_delete_key < lowerlimit) {
+                  continue;
+                }
+                else {
+                  secondary_range_occurances++;
+                }
               }
             }
           }

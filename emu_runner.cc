@@ -78,21 +78,21 @@ int main(int argc, char *argvx[]) {
   }
 
   fstream fout1, fout2, fout3, fout4;
-  fout1.open("out_delete.csv", ios::out | ios::app);
-  fout2.open("out_range.csv", ios::out | ios::app);
-  fout3.open("out_sec_range.csv", ios::out | ios::app);
-  fout4.open("out_point_nonempty.csv", ios::out | ios::app);
+  // fout1.open("out_delete.csv", ios::out | ios::app);
+  // fout2.open("out_range.csv", ios::out | ios::app);
+  // fout3.open("out_sec_range.csv", ios::out | ios::app);
+  // fout4.open("out_point_nonempty.csv", ios::out | ios::app);
   // fout4.open("out_point.csv", ios::out | ios::app);
 
-  fout1 << "Delete tile size" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
-  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
-  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
-  fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
+  // fout1 << "Delete tile size" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
+  // fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
+  // fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
+  // fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
 
-  fout1.close();
-  fout2.close();
-  fout3.close();
-  fout4.close();
+  // fout1.close();
+  // fout2.close();
+  // fout3.close();
+  // fout4.close();
     
   // Issuing INSERTS
   if (_env->num_inserts > 0) 
@@ -271,9 +271,9 @@ int runWorkload(EmuEnv* _env) {
     }
     instruction='\0';
     counter++;
-    // if(!(counter % (_env->num_inserts/100))){
-    //   showProgress(_env->num_inserts, counter);
-    // }
+    if(!(counter % (_env->num_inserts/100))){
+      showProgress(_env->num_inserts, counter);
+    }
   }
 
 return 1;
@@ -406,6 +406,8 @@ void calculateDeleteTileSize(EmuEnv* _env)
     _env->variable_delete_tile_size_in_pages[i] = round (pow(num2/denum2, 0.5));
     if (_env->variable_delete_tile_size_in_pages[i] == 0)
       _env->variable_delete_tile_size_in_pages[i] = 1;
+    if (_env->variable_delete_tile_size_in_pages[i] > _env->buffer_size_in_pages)
+      _env->variable_delete_tile_size_in_pages[i] = _env->buffer_size_in_pages;
     // cout << _env->variable_delete_tile_size_in_pages[i] << " " << endl;
   }
   if (_env->lethe_new == 1)
@@ -415,6 +417,8 @@ void calculateDeleteTileSize(EmuEnv* _env)
     float num_opt = (_env->srd_count * _env->num_inserts * 1.0)/_env->entries_per_page;
     float denum_opt = ((_env->epq_count + _env->pq_count) * phi_opt * _env->level_count) + (_env->level_count * _env->srq_count);
     _env->delete_tile_size_in_pages = round (pow(num_opt/denum_opt, 0.5));
+    if (_env->delete_tile_size_in_pages > _env->buffer_size_in_pages)
+      _env->delete_tile_size_in_pages = _env->buffer_size_in_pages;
   }
 }
 
