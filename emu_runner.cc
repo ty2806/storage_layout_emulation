@@ -209,7 +209,7 @@ int main(int argc, char *argvx[]) {
     else if (_env->lethe_new == 1 || _env->lethe_new == 2)
     {
       int s = runWorkload(_env);
-      DiskMetaFile::printAllEntries(only_file_meta_data);
+      // DiskMetaFile::printAllEntries(only_file_meta_data);
       MemoryBuffer::getCurrentBufferStatistics();
       DiskMetaFile::getMetaStatistics();
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
@@ -421,6 +421,7 @@ void calculateDeleteTileSize(EmuEnv* _env)
       _env->delete_tile_size_in_pages = 1;
     if (_env->delete_tile_size_in_pages > _env->buffer_size_in_pages)
       _env->delete_tile_size_in_pages = _env->buffer_size_in_pages;
+    std::cout << "Optimal Delete Tile Size: " << _env->delete_tile_size_in_pages << std::endl;
   }
 }
 

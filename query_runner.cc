@@ -78,7 +78,7 @@ void Query::checkDeleteCount (int deletekey)
           if (page.max_delete_key > 0)
           {
             if (page.max_delete_key < deletekey) {
-            complete_delete_count++;
+              complete_delete_count++;
             }
             else if (page.min_delete_key > deletekey) {
               not_possible_delete_count++;
@@ -120,14 +120,14 @@ void Query::delete_query_experiment()
   int delete_key1;
 
   fstream fout1;
-  fout1.open("out_delete.csv", ios::out | ios::app);
-  fout1 << "Delete tile size" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
+  fout1.open("out_delete_srq.csv", ios::out | ios::app);
+  fout1 << "SRQ Count" << ", " << "Fraction" << "," << "Delete Key" << "," << "Full Drop" << "," << "Partial Drop" << "," << "Impossible Drop" << "\n";
 
   for (int i = 0 ; i < 20; i++)
   {
     delete_key1 = _env->num_inserts/selectivity[i];
     Query::checkDeleteCount(delete_key1);
-    fout1 << _env->delete_tile_size_in_pages << "," << "1/"+ to_string(selectivity[i])  << "," << delete_key1 << "," << Query::complete_delete_count << "," << Query::partial_delete_count 
+    fout1 << _env->srq_count << "," << "1/"+ to_string(selectivity[i])  << "," << delete_key1 << "," << Query::complete_delete_count << "," << Query::partial_delete_count 
       << "," << Query::not_possible_delete_count << endl;
   }
 
@@ -141,8 +141,8 @@ void Query::range_query_experiment()
   int range_iterval_1, range_query_start_1, range_query_end_1;
 
   fstream fout2;
-  fout2.open("out_range.csv", ios::out | ios::app);
-  fout2 << "Delete tile size" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
+  fout2.open("out_range_srq.csv", ios::out | ios::app);
+  fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
 
   for (int i = 0; i < 35 ; i++ )
   {
@@ -159,7 +159,7 @@ void Query::range_query_experiment()
       range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
     }
     Query::rangeQuery(range_query_start_1, range_query_end_1);
-    fout2 << _env->delete_tile_size_in_pages << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
+    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
   }
   fout2.close();
 }
@@ -171,8 +171,8 @@ void Query::sec_range_query_experiment()
   float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
 
   fstream fout3;
-  fout3.open("out_sec_range.csv", ios::out | ios::app);
-  fout3 << "Delete tile size" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
+  fout3.open("out_sec_range_srq.csv", ios::out | ios::app);
+  fout3 << "SRQ Count" << ", " << "Selectivity" << "," <<  "Sec Range Start" << "," << "Sec Range End" << "," << "Occurrences" << "\n";
 
   for (int i = 0; i < 35 ; i++ )
   {
@@ -180,7 +180,7 @@ void Query::sec_range_query_experiment()
     range_query_start_1 = _env->num_inserts/2 - range_iterval_1/2;
     range_query_end_1 = _env->num_inserts/2 + range_iterval_1/2;
     Query::secondaryRangeQuery(range_query_start_1, range_query_end_1);
-    fout3 << _env->delete_tile_size_in_pages << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::secondary_range_occurances << endl;
+    fout3 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::secondary_range_occurances << endl;
   }
 
   fout3.close();
@@ -203,8 +203,8 @@ void Query::new_point_query_experiment ()
 {
   EmuEnv* _env = EmuEnv::getInstance();
   fstream fout4;
-  fout4.open("out_point_nonempty.csv", ios::out | ios::app);
-  fout4 << "Delete tile size" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
+  fout4.open("out_point_nonempty_srq.csv", ios::out | ios::app);
+  fout4 << "SRQ Count" << ", " << "Iterations" << "," <<  "Sum_Page_Id" << "," << "Avg_Page_Id" << "," << "Found" << "," << "Not Found" << "\n";
 
   counter = 0;
   sum_page_id = 0;
@@ -231,7 +231,7 @@ void Query::new_point_query_experiment ()
       showProgress(_env->pq_count, counter);
     }
   }
-  fout4 << _env->delete_tile_size_in_pages << "," << _env->pq_count << "," << Query::sum_page_id << "," << Query::sum_page_id/(Query::found_count * 1.0) << "," << Query::found_count << "," << Query::not_found_count << endl;
+  fout4 << _env->srq_count << "," << _env->pq_count << "," << Query::sum_page_id << "," << Query::sum_page_id/(Query::found_count * 1.0) << "," << Query::found_count << "," << Query::not_found_count << endl;
   fout4.close();
 }
 
