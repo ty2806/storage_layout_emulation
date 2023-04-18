@@ -36,7 +36,7 @@ public:
     static void checkDeleteCount (int deletekey);
     static int pointQuery (int key);
     static void pointQueryRunner (int iterations);
-    static void rangeQuery (int lowerlimit, int upperlimit);
+    static int rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity);
     static void secondaryRangeQuery (int lowerlimit, int upperlimit);
 
     static void range_query_experiment();

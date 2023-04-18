@@ -16,10 +16,12 @@
 #include "query_runner.h"
 #include "tree_builder.h"
 #include "workload_generator.h"
+#include "workload_executor.h"
 
 
 using namespace std;
 using namespace tree_builder;
+using namespace workload_exec;
 
 int Query::complete_delete_count = 0;
 int Query::not_possible_delete_count = 0;
@@ -139,6 +141,8 @@ void Query::range_query_experiment()
   EmuEnv* _env = EmuEnv::getInstance();
   float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
   int range_iterval_1, range_query_start_1, range_query_end_1;
+  int write_file_count = 0;
+  double QueryDrivenCompactionSelectivity = 0.8;
 
   fstream fout2;
   fout2.open("out_range_srq.csv", ios::out | ios::app);
@@ -158,7 +162,7 @@ void Query::range_query_experiment()
       range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
       range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
     }
-    Query::rangeQuery(range_query_start_1, range_query_end_1);
+    write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
     fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
   }
   fout2.close();
@@ -235,7 +239,7 @@ void Query::new_point_query_experiment ()
   fout4.close();
 }
 
-void Query::rangeQuery (int lowerlimit, int upperlimit) {
+int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity) {
 
   range_occurances = 0;
 
@@ -278,8 +282,12 @@ void Query::rangeQuery (int lowerlimit, int upperlimit) {
       moving_head = moving_head->next_file_ptr;
     }
   }
+  int write_file_count = 0;
+  int compaction_bound = (int)(lowerlimit + (upperlimit - lowerlimit) * QueryDrivenCompactionSelectivity);
+  write_file_count = Utility::QueryDrivenCompaction(lowerlimit, compaction_bound);
   // std::cout << "(Range Query)" << std::endl;
   // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
+  return write_file_count;
 }
 
 void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {

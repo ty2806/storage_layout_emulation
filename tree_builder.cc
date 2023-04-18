@@ -212,6 +212,8 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
   EmuEnv *_env = EmuEnv::getInstance();
   int max_entry_count_in_level = DiskMetaFile::level_max_size[level] / _env->entry_size;
   int max_file_count_in_level = DiskMetaFile::level_max_file_count[level];
+  int write_file_count = 0;
+
   if (file_count_in_level >= max_file_count_in_level)
   {
     if (MemoryBuffer::verbosity == 2)
@@ -282,10 +284,10 @@ int DiskMetaFile::checkAndAdjustLevelSaturation(int level)
                   << "\t" << std::endl;
     }
 
-    Utility::sortAndWrite(vector_to_compact, level + 1);
+      write_file_count = Utility::sortAndWrite(vector_to_compact, level + 1);
 
   }
-  return 1;
+  return write_file_count;
 }
 
 int DiskMetaFile::setSSTFileHead(SSTFile *arg, int level_to_flush_in)
