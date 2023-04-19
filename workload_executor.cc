@@ -255,10 +255,8 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
   {
     if (MemoryBuffer::verbosity == 2)
       std::cout << "head not null anymore" << std::endl;
-    SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
-    SSTFile *moving_head = head_level_1;
 
-    sortMerge(vector_to_compact, moving_head);
+    sortMerge(vector_to_compact, level_to_flush_in);
     
     if (MemoryBuffer::verbosity == 1)   //UNCOMMENT
     {
@@ -328,17 +326,19 @@ int Utility::QueryDrivenCompaction(int lowerlimit, int upperlimit)
 
     for (int i = 2; i < last_level; i++)
     {
-        sortMerge(vector_to_compact, DiskMetaFile::getSSTFileHead(i));
+        write_file_count += sortMergeRepartition(vector_to_compact, i);
     }
 
-    write_file_count = sortAndWrite(vector_to_compact, last_level);
+    write_file_count += sortAndWrite(vector_to_compact, last_level);
     return write_file_count;
 }
 
 
-// merge and sort vector_to_compact at level of moving_head
-void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_to_compact, SSTFile* moving_head)
+// merge and sort vector_to_compact at level_to_flush_in
+// This will merge all kv in SST files overlapping with vector_to_compact
+void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_sort)
 {
+    SSTFile* moving_head = DiskMetaFile::getSSTFileHead(level_to_sort);
     long startval =  vector_to_compact[0].first.first;
     long endval =  vector_to_compact[vector_to_compact.size()-1].first.first;
     int match = 0;
@@ -348,7 +348,7 @@ void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_
 
     while (moving_head)
     {
-        if (moving_head->min_sort_key >= endval || moving_head->max_sort_key <= startval )
+        if (moving_head->min_sort_key > endval || moving_head->max_sort_key < startval )
         {
             moving_head = moving_head->next_file_ptr;
             continue;
@@ -380,6 +380,83 @@ void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_
         std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
 
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
+}
+
+// merge and sort vector_to_compact at level_to_flush_in
+// All kv inside range of vector_to_compact will be merged
+// kv in SST files overlapping with vector_to_compact but outside range of vector_to_compact will be written back
+int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_flush_in)
+{
+    SSTFile* level_head = DiskMetaFile::getSSTFileHead(level_to_flush_in);
+    SSTFile* moving_head = level_head;
+    long startval =  vector_to_compact[0].first.first;
+    long endval =  vector_to_compact[vector_to_compact.size()-1].first.first;
+    vector < pair < pair < long, long >, string > > vector_to_populate;
+    SSTFile* prev_head = nullptr;
+    int match = 0;
+
+    if (MemoryBuffer::verbosity == 2)
+        std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
+
+    while (moving_head)
+    {
+        if (moving_head->min_sort_key > endval) {
+            if (prev_head != nullptr) {
+                prev_head->next_file_ptr = moving_head;
+            }
+            else {
+                DiskMetaFile::setSSTFileHead(moving_head, level_to_flush_in);
+            }
+            break;
+        }
+        if (moving_head->max_sort_key < startval)
+        {
+            prev_head = moving_head;
+            moving_head = moving_head->next_file_ptr;
+            continue;
+        }
+        //cout << "Performed Optimization :: Overlap FOUND" << endl;
+        if (prev_head != nullptr) {
+            prev_head->next_file_ptr = nullptr;
+        }
+        for (const auto& delete_tile : moving_head->tile_vector)
+        {
+            for (const auto& page : delete_tile.page_vector)
+            {
+                for (auto & m : page.kv_vector)
+                {
+                    if (m.first.first >= startval and m.first.first <= endval) {
+                        for(auto & p : vector_to_compact) {
+                            if (p.first.first == m.first.first) {
+                                match++;
+                            }
+                        }
+                        if (match == 0)
+                            vector_to_compact.push_back(m);
+                        else
+                            match = 0;
+                    }
+                    else {
+                        vector_to_populate.push_back(m);
+                    }
+                }
+            }
+        }
+        moving_head = moving_head->next_file_ptr;
+    }
+
+    if (MemoryBuffer::verbosity == 2)
+        std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
+
+    std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
+    std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
+
+    if (prev_head == nullptr && level_head == DiskMetaFile::getSSTFileHead(level_to_flush_in)) {
+        DiskMetaFile::setSSTFileHead(nullptr, level_to_flush_in);
+    }
+    // todo:deal with the situation that the entire level is in vector_to_populate.
+    int write_file_count = compactAndFlush(vector_to_populate, level_to_flush_in);
+    return write_file_count;
 }
 // Class : WorkloadExecutor
 

@@ -39,7 +39,8 @@ namespace workload_exec {
       static bool sortbydeletekey(const pair<pair<long, long>, string> &a, const pair<pair<long, long>, string> &b);
       static int minInt(int a, int b);
       static int QueryDrivenCompaction(int lowerlimit, int upperlimit);
-      static void sortMerge(vector < pair < pair < long, long >, string > >& vector_to_compact, SSTFile* moving_head);
+      static void sortMerge(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_flush_in);
+      static int sortMergeRepartition(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_flush_in);
   };
 
 

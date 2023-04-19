@@ -282,9 +282,11 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
       moving_head = moving_head->next_file_ptr;
     }
   }
-  int write_file_count = 0;
-  int compaction_bound = (int)(lowerlimit + (upperlimit - lowerlimit) * QueryDrivenCompactionSelectivity);
-  write_file_count = Utility::QueryDrivenCompaction(lowerlimit, compaction_bound);
+
+  int range = upperlimit - lowerlimit;
+  int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
+  int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
+  int write_file_count = Utility::QueryDrivenCompaction(centerLowerBound, centerUpperBound);
   // std::cout << "(Range Query)" << std::endl;
   // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
   return write_file_count;
