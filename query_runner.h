@@ -39,6 +39,8 @@ public:
     static int rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity);
     static void secondaryRangeQuery (int lowerlimit, int upperlimit);
 
+    static void range_query_compaction_experiment(float selectivity);
+
     static void range_query_experiment();
     static void sec_range_query_experiment();
     static void delete_query_experiment();

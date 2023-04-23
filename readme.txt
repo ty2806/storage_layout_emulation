@@ -1,5 +1,6 @@
 classical
 ./emu_runner -i 1000000 -P 4096 -B 4 -E 1024 -T 10 -h 1 -c 0 -D 1000 -S 10000 -F 1000000 -s 1000 -f 10000 -N 1000000
+./emu_runner -i 10000 -P 256 -B 4 -E 1024 -T 10 -h 1 -c 0 -D 1000 -S 10 -F 10000
 
 i = 1000000 [Number of inserts]
 P = 4096 [Buffer size in pages]
@@ -35,3 +36,4 @@ I = 1 [count of secondary range delete query]
 J = 1000000 [count of empty point queries]
 K = 1000000 [count of non-empty point queries]
 L = 10000 [count of short range queries]
+

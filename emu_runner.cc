@@ -95,6 +95,43 @@ int main(int argc, char *argvx[]) {
   // fout4.close();
     
   // Issuing INSERTS
+  float selectivities[25] = {0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80};
+  for (int i = 0; i < 25; i++) {
+    cout << "Round " << i << endl;
+    std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+    
+    WorkloadGenerator workload_generator;
+    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+
+    std::cout << "Workload Generated!" << std::endl;
+
+    int only_file_meta_data = 0;
+
+    if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+    {
+      int s = runWorkload(_env);
+      std::cout << "Insert complete ... " << std::endl << std::flush; 
+      //DiskMetaFile::printAllEntries(only_file_meta_data);
+      MemoryBuffer::getCurrentBufferStatistics();
+      DiskMetaFile::getMetaStatistics();
+
+      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+      {
+        DiskMetaFile::printAllEntries(only_file_meta_data);
+        MemoryBuffer::getCurrentBufferStatistics();
+        DiskMetaFile::getMetaStatistics();
+      }
+      
+      Query::range_query_compaction_experiment(selectivities[i]);
+
+      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+        printEmulationOutput(_env);
+    }
+    DiskMetaFile::clearAllEntries();
+  }
+
+  return 0;
+
   if (_env->num_inserts > 0) 
   {
     // if (_env->verbosity >= 1) 
@@ -122,8 +159,10 @@ int main(int argc, char *argvx[]) {
         DiskMetaFile::getMetaStatistics();
       }
 
-        cout << "Running Range Query..." << endl;
-        Query::range_query_experiment();
+        // cout << "Running Range Query..." << endl;
+        // Query::range_query_experiment();
+      
+      Query::range_query_compaction_experiment(10);
       // Query::checkDeleteCount(Query::delete_key);
       // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
       // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
