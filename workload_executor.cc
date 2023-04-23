@@ -275,7 +275,7 @@ int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector
   return write_file_count;
 }
 
-int Utility::QueryDrivenCompaction(int lowerlimit, int upperlimit)
+int Utility::QueryDrivenCompaction(vector < pair < pair < long, long >, string > > vector_to_compact)
 {
     int write_file_count = 0;
     int last_level = DiskMetaFile::getTotalLevelCount();
@@ -284,52 +284,13 @@ int Utility::QueryDrivenCompaction(int lowerlimit, int upperlimit)
         return write_file_count;
     }
 
-    vector < pair < pair < long, long >, string > > vector_to_compact;
-    SSTFile *moving_head = DiskMetaFile::getSSTFileHead(1);
-    while (moving_head)
-    {
-        if (moving_head->min_sort_key > upperlimit)
-            break;
-        if (moving_head->max_sort_key < lowerlimit ) {
-            moving_head = moving_head->next_file_ptr;
-            continue;
-        }
-        else {
-            for (const auto& delete_tile : moving_head->tile_vector)
-            {
-                if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
-                    continue;
-                }
-                else {
-                    for (const auto& page : delete_tile.page_vector)
-                    {
-                        if (page.min_sort_key > 0)
-                        {
-                            if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
-                                continue;
-                            }
-                            else {
-                                for (auto & m : page.kv_vector)
-                                {
-                                    if (m.first.first >= lowerlimit and m.first.first <= upperlimit) {
-                                        vector_to_compact.push_back(m);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        moving_head = moving_head->next_file_ptr;
-    }
-
     for (int i = 2; i < last_level; i++)
     {
         write_file_count += sortMergeRepartition(vector_to_compact, i);
     }
 
     write_file_count += sortAndWrite(vector_to_compact, last_level);
+
     return write_file_count;
 }
 
@@ -451,10 +412,12 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
     std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
 
+    // todo:deal with the situation that the entire level is in vector_to_populate.
+    // currently set start head of this level to nullptr
     if (prev_head == nullptr && level_head == DiskMetaFile::getSSTFileHead(level_to_flush_in)) {
         DiskMetaFile::setSSTFileHead(nullptr, level_to_flush_in);
     }
-    // todo:deal with the situation that the entire level is in vector_to_populate.
+
     int write_file_count = compactAndFlush(vector_to_populate, level_to_flush_in);
     return write_file_count;
 }

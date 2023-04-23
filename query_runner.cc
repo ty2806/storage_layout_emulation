@@ -139,16 +139,15 @@ void Query::delete_query_experiment()
 void Query::range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  float selectivity[35] = {0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
+  float selectivity[5] = {0.1, 1, 10, 20, 50};
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  int write_file_count = 0;
-  double QueryDrivenCompactionSelectivity = 0.8;
+  double QueryDrivenCompactionSelectivity = 1;
 
   fstream fout2;
   fout2.open("out_range_srq.csv", ios::out | ios::app);
-  fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
+  fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count" << "\n";
 
-  for (int i = 0; i < 35 ; i++ )
+  for (int i = 0; i < 5 ; i++ )
   {
     if (_env->correlation == 0)
     {
@@ -162,8 +161,8 @@ void Query::range_query_experiment()
       range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
       range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
     }
-    write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
-    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
+    int write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
+    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << endl;
   }
   fout2.close();
 }
@@ -242,7 +241,10 @@ void Query::new_point_query_experiment ()
 int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity) {
 
   range_occurances = 0;
-
+  vector < pair < pair < long, long >, string > > vector_to_compact;
+  int range = upperlimit - lowerlimit;
+  int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
+  int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
@@ -256,22 +258,26 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
         continue;
       } 
       else {
-        for (int k = 0; k < moving_head->tile_vector.size(); k++)
+        for (const auto& delete_tile : moving_head->tile_vector)
         {
-          DeleteTile delete_tile = moving_head->tile_vector[k];
           if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
             continue;
           }
           else {
-            for (int l = 0; l < delete_tile.page_vector.size(); l++)
+            for (const auto& page : delete_tile.page_vector)
             {
-              Page page = delete_tile.page_vector[l];
               if (page.min_sort_key > 0)
               {
                 if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
                 continue;
                 }
                 else {
+                    for (auto & m : page.kv_vector)
+                    {
+                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound) {
+                            vector_to_compact.push_back(m);
+                        }
+                    }
                   range_occurances++;
                 }
               }
@@ -282,14 +288,18 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
       moving_head = moving_head->next_file_ptr;
     }
   }
+    // std::cout << "(Range Query)" << std::endl;
+    // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
+  if (!vector_to_compact.empty()) {
 
-  int range = upperlimit - lowerlimit;
-  int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
-  int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
-  int write_file_count = Utility::QueryDrivenCompaction(centerLowerBound, centerUpperBound);
-  // std::cout << "(Range Query)" << std::endl;
-  // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
-  return write_file_count;
+      int write_file_count = Utility::QueryDrivenCompaction(vector_to_compact);
+      return write_file_count;
+  }
+  else {
+      cout << "Nothing to find in range query " << lowerlimit << " to " << upperlimit << endl;
+      return 0;
+  }
+
 }
 
 void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {

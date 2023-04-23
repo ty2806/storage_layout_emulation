@@ -111,7 +111,7 @@ int main(int argc, char *argvx[]) {
     {
       int s = runWorkload(_env);
       std::cout << "Insert complete ... " << std::endl << std::flush; 
-      DiskMetaFile::printAllEntries(only_file_meta_data);
+      //DiskMetaFile::printAllEntries(only_file_meta_data);
       MemoryBuffer::getCurrentBufferStatistics();
       DiskMetaFile::getMetaStatistics();
 
@@ -122,6 +122,8 @@ int main(int argc, char *argvx[]) {
         DiskMetaFile::getMetaStatistics();
       }
 
+        cout << "Running Range Query..." << endl;
+        Query::range_query_experiment();
       // Query::checkDeleteCount(Query::delete_key);
       // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
       // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
@@ -190,13 +192,13 @@ int main(int argc, char *argvx[]) {
           DiskMetaFile::getMetaStatistics();
         }
 
-        cout << "Running Delete Query..." << endl;
-        Query::delete_query_experiment();
+        //cout << "Running Delete Query..." << endl;
+        //Query::delete_query_experiment();
         cout << "Running Range Query..." << endl;
         Query::range_query_experiment();
-        cout << "Running Secondary Range Query..." << endl;
-        Query::sec_range_query_experiment();
-        cout << "Running Point Query..." << endl;
+        //cout << "Running Secondary Range Query..." << endl;
+        //Query::sec_range_query_experiment();
+        //cout << "Running Point Query..." << endl;
         // Query::point_query_experiment();
         
         DiskMetaFile::clearAllEntries();
