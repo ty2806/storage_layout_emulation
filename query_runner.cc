@@ -136,15 +136,17 @@ void Query::delete_query_experiment()
   fout1.close();
 }
 
-void Query::range_query_compaction_experiment(float selectivity)
+void Query::range_query_compaction_experiment(float selectivity, string file)
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int range_iterval_1, range_query_start_1, range_query_end_1;
   double QueryDrivenCompactionSelectivity = 1;
 
   fstream fout2;
-  fout2.open("compaction_out_range_srq.csv", ios::out | ios::app);
-  if (std::abs(selectivity - 0.0001) < 0.00001) {
+  fout2.open(file, ios::out | ios::app);
+  fout2.seekp(0, std::ios::end);
+  bool is_empty = (fout2.tellp() == 0);
+  if (is_empty) {
     fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count" << "\n";
   }
   if (_env->correlation == 0)

@@ -122,11 +122,48 @@ int main(int argc, char *argvx[]) {
         DiskMetaFile::getMetaStatistics();
       }
       
-      Query::range_query_compaction_experiment(selectivities[i]);
+      Query::range_query_compaction_experiment(selectivities[i], "compaction_sequential.csv");
 
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
         printEmulationOutput(_env);
     }
+    DiskMetaFile::clearAllEntries();
+  }
+
+  for (int i = 0; i < 25; i++) {
+    cout << "Round " << i << endl;
+
+    int only_file_meta_data = 0;
+    for (int j = 0; j < 5; j++) {
+      std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+
+      WorkloadGenerator workload_generator;
+      workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);    
+
+      std::cout << "Workload Generated!" << std::endl;
+
+      if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+      {
+        int s = runWorkload(_env);
+        std::cout << "Insert complete ... " << std::endl << std::flush; 
+        //DiskMetaFile::printAllEntries(only_file_meta_data);
+        MemoryBuffer::getCurrentBufferStatistics();
+        DiskMetaFile::getMetaStatistics();
+
+        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+        {
+          DiskMetaFile::printAllEntries(only_file_meta_data);
+          MemoryBuffer::getCurrentBufferStatistics();
+          DiskMetaFile::getMetaStatistics();
+        }
+        
+        Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv");
+
+        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+          printEmulationOutput(_env);
+      }
+    }
+
     DiskMetaFile::clearAllEntries();
   }
 
@@ -162,7 +199,6 @@ int main(int argc, char *argvx[]) {
         // cout << "Running Range Query..." << endl;
         // Query::range_query_experiment();
       
-      Query::range_query_compaction_experiment(10);
       // Query::checkDeleteCount(Query::delete_key);
       // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
       // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
