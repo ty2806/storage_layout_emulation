@@ -410,16 +410,22 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
         std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
 
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
-    std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
 
-    // todo:deal with the situation that the entire level is in vector_to_populate.
-    // currently set start head of this level to nullptr
-    if (prev_head == nullptr && level_head == DiskMetaFile::getSSTFileHead(level_to_flush_in)) {
-        DiskMetaFile::setSSTFileHead(nullptr, level_to_flush_in);
+    if (!vector_to_populate.empty()) {
+        std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
+
+        // todo:deal with the situation that the entire level is in vector_to_populate.
+        // currently set start head of this level to nullptr
+        if (prev_head == nullptr && level_head == DiskMetaFile::getSSTFileHead(level_to_flush_in)) {
+            DiskMetaFile::setSSTFileHead(nullptr, level_to_flush_in);
+        }
+
+        int write_file_count = compactAndFlush(vector_to_populate, level_to_flush_in);
+        return write_file_count;
     }
-
-    int write_file_count = compactAndFlush(vector_to_populate, level_to_flush_in);
-    return write_file_count;
+    else {
+        return 0;
+    }
 }
 // Class : WorkloadExecutor
 

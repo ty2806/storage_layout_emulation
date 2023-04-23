@@ -3,7 +3,7 @@ classical
 
 i = 1000000 [Number of inserts]
 P = 4096 [Buffer size in pages]
-B = 4 [Entries in page]
+B = 4 [Entries in page].
 E = 1024 [Entry size in bytes]
 T = 10 [Size Ratio]
 h = 1 [Delete tile size in pages. If h not specified (-1), the code will be in experiment mode. It will run for all values of h from 1 to P (multiplicative factor 2). Also, if h is not specified, the values D, S, F, s, f and N are don't care. They are tuned inside the code based on experiment selectivity]

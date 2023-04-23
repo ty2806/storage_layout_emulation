@@ -139,7 +139,7 @@ void Query::delete_query_experiment()
 void Query::range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  float selectivity[5] = {0.1, 1, 10, 20, 50};
+  float selectivity[5] = {0.1, 1, 10, 20, 100};
   int range_iterval_1, range_query_start_1, range_query_end_1;
   double QueryDrivenCompactionSelectivity = 1;
 
