@@ -353,8 +353,8 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
     long startval =  vector_to_compact[0].first.first;
     long endval =  vector_to_compact[vector_to_compact.size()-1].first.first;
     vector < pair < pair < long, long >, string > > vector_to_populate;
+    vector < pair < pair < long, long >, string > > vector_overlapping;
     SSTFile* prev_head = nullptr;
-    int match = 0;
 
     if (MemoryBuffer::verbosity == 2)
         std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
@@ -386,19 +386,11 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
             {
                 for (auto & m : page.kv_vector)
                 {
-                    if (m.first.first >= startval and m.first.first <= endval) {
-                        for(auto & p : vector_to_compact) {
-                            if (p.first.first == m.first.first) {
-                                match++;
-                            }
-                        }
-                        if (match == 0)
-                            vector_to_compact.push_back(m);
-                        else
-                            match = 0;
+                    if (m.first.first < startval || m.first.first > endval) {
+                        vector_to_populate.push_back(m);
                     }
                     else {
-                        vector_to_populate.push_back(m);
+                        vector_overlapping.push_back(m);
                     }
                 }
             }
@@ -406,12 +398,7 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
         moving_head = moving_head->next_file_ptr;
     }
 
-    if (MemoryBuffer::verbosity == 2)
-        std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
-
-    std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
-
-    if (!vector_to_populate.empty()) {
+    if (!vector_to_populate.empty() and !vector_overlapping.empty()) {
         std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
 
         // todo:deal with the situation that the entire level is in vector_to_populate.

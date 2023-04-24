@@ -137,17 +137,17 @@ int main(int argc, char *argvx[]) {
 
     int only_file_meta_data = 0;
     for (int j = 0; j < 5; j++) {
-      std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+      std::cerr << "Issuing inserts ... " << std::endl << std::flush;
 
       WorkloadGenerator workload_generator;
-      workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);    
+      workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);
 
       std::cout << "Workload Generated!" << std::endl;
 
       if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
       {
         int s = runWorkload(_env);
-        std::cout << "Insert complete ... " << std::endl << std::flush; 
+        std::cout << "Insert complete ... " << std::endl << std::flush;
         //DiskMetaFile::printAllEntries(only_file_meta_data);
         MemoryBuffer::getCurrentBufferStatistics();
         DiskMetaFile::getMetaStatistics();
@@ -158,7 +158,7 @@ int main(int argc, char *argvx[]) {
           MemoryBuffer::getCurrentBufferStatistics();
           DiskMetaFile::getMetaStatistics();
         }
-        
+
         for (int j = 0; j < 2; j++) {
           Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv");
         }
