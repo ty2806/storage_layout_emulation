@@ -122,7 +122,9 @@ int main(int argc, char *argvx[]) {
         DiskMetaFile::getMetaStatistics();
       }
       
-      Query::range_query_compaction_experiment(selectivities[i], "compaction_sequential.csv");
+      for (int j = 0; j < 10; j++) {
+        Query::range_query_compaction_experiment(selectivities[i], "compaction_sequential.csv");
+      }
 
       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
         printEmulationOutput(_env);
@@ -157,7 +159,9 @@ int main(int argc, char *argvx[]) {
           DiskMetaFile::getMetaStatistics();
         }
         
-        Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv");
+        for (int j = 0; j < 2; j++) {
+          Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv");
+        }
 
         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
           printEmulationOutput(_env);
