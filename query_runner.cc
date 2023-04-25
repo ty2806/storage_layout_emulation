@@ -176,7 +176,7 @@ void Query::range_query_experiment()
   EmuEnv* _env = EmuEnv::getInstance();
   float selectivity[5] = {0.1, 1, 10, 20, 100};
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  double QueryDrivenCompactionSelectivity = 1;
+  double QueryDrivenCompactionSelectivity = 0.1;
 
   fstream fout2;
   fout2.open("out_range_srq.csv", ios::out | ios::app);
