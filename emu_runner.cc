@@ -96,6 +96,7 @@ int main(int argc, char *argvx[]) {
     
   // Issuing INSERTS
   float selectivities[25] = {0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80};
+
   for (int i = 0; i < 25; i++) {
     cout << "Round " << i << endl;
     std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
