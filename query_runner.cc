@@ -171,24 +171,75 @@ void Query::range_query_compaction_experiment(float selectivity, string file)
 
 }
 
+void Query::vanilla_range_query (int lowerlimit, int upperlimit) {
+
+  range_occurances = 0;
+
+  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
+  {
+    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+    SSTFile *moving_head = level_i_head;
+    while (moving_head)
+    {
+      if (moving_head->min_sort_key > upperlimit)
+        break;
+      if (moving_head->max_sort_key < lowerlimit ) {
+        moving_head = moving_head->next_file_ptr;
+        continue;
+      } 
+      else {
+        for (int k = 0; k < moving_head->tile_vector.size(); k++)
+        {
+          DeleteTile delete_tile = moving_head->tile_vector[k];
+          if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
+            continue;
+          }
+          else {
+            for (int l = 0; l < delete_tile.page_vector.size(); l++)
+            {
+              Page page = delete_tile.page_vector[l];
+              if (page.min_sort_key > 0)
+              {
+                if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
+                continue;
+                }
+                else {
+                  range_occurances++;
+                }
+              }
+            }
+          }
+        }
+      }
+      moving_head = moving_head->next_file_ptr;
+    }
+  }
+  // std::cout << "(Range Query)" << std::endl;
+  // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
+}
+
 void Query::range_query_experiment()
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  float selectivity[5] = {0.1, 1, 10, 20, 100};
+  float selectivity[5] = {1, 25, 50, 75, 95};
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  double QueryDrivenCompactionSelectivity = 1;
 
   fstream fout2;
-  fout2.open("out_range_srq.csv", ios::out | ios::app);
-  fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count" << "\n";
+
+  fout2.open("no_compaction_sequential.csv", ios::out | ios::app);
+  bool is_empty = (fout2.tellp() == 0);
+  if (is_empty) {
+    fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
+  }
 
   for (int i = 0; i < 5 ; i++ )
   {
     if (_env->correlation == 0)
     {
       range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE * selectivity[i] / 100;
-      range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 - range_iterval_1 / 2;
-      range_query_end_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 + range_iterval_1 / 2;
+      std::uniform_int_distribution<int> distribution(0, WorkloadGenerator::KEY_DOMAIN_SIZE-range_iterval_1-1);
+      range_query_start_1 = distribution(generator);
+      range_query_end_1 = range_query_start_1 + range_iterval_1;
     }
     else
     {
@@ -196,8 +247,8 @@ void Query::range_query_experiment()
       range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
       range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
     }
-    int write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
-    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << endl;
+    Query::vanilla_range_query(range_query_start_1, range_query_end_1);
+    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
   }
   fout2.close();
 }

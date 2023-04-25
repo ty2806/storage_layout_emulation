@@ -38,6 +38,7 @@ public:
     static void pointQueryRunner (int iterations);
     static int rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity);
     static void secondaryRangeQuery (int lowerlimit, int upperlimit);
+    static void vanilla_range_query (int lowerlimit, int upperlimit);
 
     static void range_query_compaction_experiment(float selectivity, string file);
 
