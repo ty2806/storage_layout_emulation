@@ -274,7 +274,6 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
 
   range_occurances = 0;
   vector < pair < pair < long, long >, string > > vector_to_compact;
-  vector < pair < pair < long, long >, string > > vector_middle;
   int range = upperlimit - lowerlimit;
   int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
   int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
@@ -308,10 +307,7 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
                 else {
                     for (auto & m : page.kv_vector)
                     {
-                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound) {
-                            if (i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
-                                vector_middle.push_back(m);
-                            }
+                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound and i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
                             for(auto & p : vector_to_compact) {
                                 if (p.first.first == m.first.first) {
                                     match++;
@@ -336,7 +332,7 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
   }
     // std::cout << "(Range Query)" << std::endl;
     // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
-  if (!vector_to_compact.empty() and !vector_middle.empty()) {
+  if (!vector_to_compact.empty()) {
       cout << "range query completes. Starting query driven compaction. vector size:"<< vector_to_compact.size() << endl;
       std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
       int write_file_count = Utility::QueryDrivenCompaction(vector_to_compact);
