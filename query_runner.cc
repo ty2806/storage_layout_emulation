@@ -176,7 +176,7 @@ void Query::range_query_experiment()
   EmuEnv* _env = EmuEnv::getInstance();
   float selectivity[5] = {0.1, 1, 10, 20, 100};
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  double QueryDrivenCompactionSelectivity = 0.1;
+  double QueryDrivenCompactionSelectivity = 1;
 
   fstream fout2;
   fout2.open("out_range_srq.csv", ios::out | ios::app);
@@ -284,7 +284,6 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
   {
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
     SSTFile *moving_head = level_i_head;
-    int match = 0;
     while (moving_head)
     {
       if (moving_head->min_sort_key > upperlimit)
@@ -310,7 +309,10 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
                 else {
                     for (auto & m : page.kv_vector)
                     {
-                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound and i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
+                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound) {
+                            if (i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
+                                vector_middle.push_back(m);
+                            }
                             for(auto & p : vector_to_compact) {
                                 if (p.first.first == m.first.first) {
                                     match++;
@@ -335,14 +337,14 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
   }
     // std::cout << "(Range Query)" << std::endl;
     // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
-  if (!vector_to_compact.empty()) {
+  if (!vector_to_compact.empty() and !vector_middle.empty()) {
       cout << "range query completes. Starting query driven compaction. vector size:"<< vector_to_compact.size() << endl;
       std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
       int write_file_count = Utility::QueryDrivenCompaction(vector_to_compact);
       return write_file_count;
   }
   else {
-      cout << "Nothing to compact in range query " << lowerlimit << " to " << upperlimit << endl;
+      cout << "Nothing to find in range query " << lowerlimit << " to " << upperlimit << endl;
       return 0;
   }
 
