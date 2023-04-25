@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
+#include <random>
 
 #include "emu_environment.h"
 #include "query_runner.h"
@@ -34,6 +35,7 @@ long Query::sum_page_id = 0;
 long Query::found_count = 0;
 long Query::not_found_count = 0;
 
+std::default_random_engine generator(1);
 uint32_t counter = 0;
 
 inline void showProgress(const uint32_t &workload_size, const uint32_t &counter) {
@@ -152,8 +154,9 @@ void Query::range_query_compaction_experiment(float selectivity, string file)
   if (_env->correlation == 0)
   {
     range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE * selectivity / 100;
-    range_query_start_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 - range_iterval_1 / 2;
-    range_query_end_1 = WorkloadGenerator::KEY_DOMAIN_SIZE / 2 + range_iterval_1 / 2;
+    std::uniform_int_distribution<int> distribution(0, WorkloadGenerator::KEY_DOMAIN_SIZE-range_iterval_1-1);
+    range_query_start_1 = distribution(generator);
+    range_query_end_1 = range_query_start_1 + range_iterval_1;
   }
   else
   {
