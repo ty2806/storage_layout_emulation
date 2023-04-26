@@ -101,9 +101,9 @@ int MemoryBuffer::initiateBufferFlush(int level_to_flush_in)
 {
   if (MemoryBuffer::verbosity == 2)
     cout << "Calling sort and write from Buffer............................" << endl;
-  Utility::sortAndWrite(MemoryBuffer::buffer, level_to_flush_in);
+  int write_file_count = Utility::sortAndWrite(MemoryBuffer::buffer, level_to_flush_in);
   MemoryBuffer::buffer_flush_count++;
-  return 1;
+  return write_file_count;
 }
 
 //Class DiskMetaFile

@@ -106,7 +106,7 @@ int main(int argc, char *argvx[]) {
 
   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
   {
-    int s = runWorkload(_env);
+    int write_file_count = runWorkload(_env);
     std::cout << "Insert complete ... " << std::endl << std::flush; 
     //DiskMetaFile::printAllEntries(only_file_meta_data);
     MemoryBuffer::getCurrentBufferStatistics();
@@ -371,6 +371,8 @@ int runWorkload(EmuEnv* _env) {
   workload_file.open("workload.txt");
   assert(workload_file);
   int counter = 0;
+
+  int write_file_count = 0;
   while(!workload_file.eof()) {
     char instruction;
     long sortkey;
@@ -381,7 +383,7 @@ int runWorkload(EmuEnv* _env) {
     {
     case 'I':
       //std::cout << instruction << " " << sortkey << " " << deletekey << " " << value << std::endl;
-      workload_executer.insert(sortkey, deletekey, value);
+        write_file_count = workload_executer.insert(sortkey, deletekey, value);
 
       break;
     
@@ -395,7 +397,7 @@ int runWorkload(EmuEnv* _env) {
     }
   }
 
-return 1;
+return write_file_count;
 }
 
 

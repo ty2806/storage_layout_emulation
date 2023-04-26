@@ -448,6 +448,7 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
     buffer_insert_count++;
   }
 
+  int write_file_count = 0;
   if (MemoryBuffer::current_buffer_saturation >= MemoryBuffer::buffer_flush_threshold)
   {
     //MemoryBuffer::getCurrentBufferStatistics();
@@ -463,8 +464,8 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
       MemoryBuffer::printBufferEntries();
     }
 
-    int status = MemoryBuffer::initiateBufferFlush(1);
-    if (status)
+    write_file_count = MemoryBuffer::initiateBufferFlush(1);
+    if (write_file_count)
     {
       if (MemoryBuffer::verbosity == 2)
         std::cout << "Buffer flushed :: Resizing buffer ( size = " << MemoryBuffer::buffer.size() << " ) ";
@@ -481,7 +482,7 @@ int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
   // if(counter % (_env->num_inserts/100) == 0 && _env->verbosity < 2)
   //     showProgress(_env->num_inserts, counter);
 
-  return 1;
+  return write_file_count;
 }
 
 int WorkloadExecutor::search(long key, int possible_level_of_occurrence)
