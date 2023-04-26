@@ -107,6 +107,8 @@ int main(int argc, char *argvx[]) {
   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
   {
     int write_file_count = runWorkload(_env);
+
+
     std::cout << "Insert complete ... " << std::endl << std::flush; 
     //DiskMetaFile::printAllEntries(only_file_meta_data);
     MemoryBuffer::getCurrentBufferStatistics();
@@ -119,9 +121,8 @@ int main(int argc, char *argvx[]) {
       DiskMetaFile::getMetaStatistics();
     }
     
-    for (int j = 0; j < 50; j++) {
-      Query::range_query_experiment();
-    }
+   //  Query::range_query_experiment();
+  
 
     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
       printEmulationOutput(_env);
@@ -383,7 +384,7 @@ int runWorkload(EmuEnv* _env) {
     {
     case 'I':
       //std::cout << instruction << " " << sortkey << " " << deletekey << " " << value << std::endl;
-        write_file_count = workload_executer.insert(sortkey, deletekey, value);
+        write_file_count += workload_executer.insert(sortkey, deletekey, value);
 
       break;
     
@@ -394,10 +395,18 @@ int runWorkload(EmuEnv* _env) {
     counter++;
     if(!(counter % (_env->num_inserts/100))){
       showProgress(_env->num_inserts, counter);
+      
     }
   }
+  fstream fout2;
+  fout2.open("insert_write_file_count.csv", ios::out | ios::app);
+  bool is_empty = (fout2.tellp() == 0);
+  if (is_empty) {
+    fout2 << "Insert Num, " << "Write File Count" << "\n";
+  }
+  fout2 << _env->num_inserts  << "," << write_file_count << endl;
 
-return write_file_count;
+  return write_file_count;
 }
 
 
