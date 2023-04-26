@@ -138,7 +138,7 @@ void Query::delete_query_experiment()
   fout1.close();
 }
 
-void Query::range_query_compaction_experiment(float selectivity, string file)
+void Query::range_query_compaction_experiment(float selectivity, string file, int insertion)
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int range_iterval_1, range_query_start_1, range_query_end_1;
@@ -149,7 +149,7 @@ void Query::range_query_compaction_experiment(float selectivity, string file)
   fout2.seekp(0, std::ios::end);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
-    fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count" << "\n";
+    fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count, insert time" << "\n";
   }
   if (_env->correlation == 0)
   {
@@ -165,7 +165,7 @@ void Query::range_query_compaction_experiment(float selectivity, string file)
     range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
   }
   int write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
-  fout2 << _env->srq_count << "," << selectivity << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << endl;
+  fout2 << _env->srq_count << "," << selectivity << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << "," << insertion << endl;
   
   fout2.close();
 

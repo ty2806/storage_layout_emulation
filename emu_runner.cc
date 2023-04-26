@@ -40,6 +40,8 @@ int Query::iterations_point_query;
 int parse_arguments2(int argc, char *argvx[], EmuEnv* _env);
 void printEmulationOutput(EmuEnv* _env);
 void calculateDeleteTileSize(EmuEnv* _env);
+float curr_selectivity;
+int insert_time;
 
 //int run_workload(read, pread, rread, write, update, delete, skew, others);
 int runWorkload(EmuEnv* _env);
@@ -95,43 +97,43 @@ int main(int argc, char *argvx[]) {
   // fout4.close();
 
   // vanilla sequential evaluation:
-  std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+  // std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
   
-  WorkloadGenerator workload_generator;
-  workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+  // WorkloadGenerator workload_generator;
+  // workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
 
-  std::cout << "Workload Generated!" << std::endl;
+  // std::cout << "Workload Generated!" << std::endl;
 
-  int only_file_meta_data = 0;
+  // int only_file_meta_data = 0;
 
-  if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-  {
-    int write_file_count = runWorkload(_env);
+  // if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+  // {
+  //   int write_file_count = runWorkload(_env);
 
 
-    std::cout << "Insert complete ... " << std::endl << std::flush; 
-    //DiskMetaFile::printAllEntries(only_file_meta_data);
-    MemoryBuffer::getCurrentBufferStatistics();
-    DiskMetaFile::getMetaStatistics();
+  //   std::cout << "Insert complete ... " << std::endl << std::flush; 
+  //   //DiskMetaFile::printAllEntries(only_file_meta_data);
+  //   MemoryBuffer::getCurrentBufferStatistics();
+  //   DiskMetaFile::getMetaStatistics();
 
-    if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-    {
-      DiskMetaFile::printAllEntries(only_file_meta_data);
-      MemoryBuffer::getCurrentBufferStatistics();
-      DiskMetaFile::getMetaStatistics();
-    }
+  //   if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //   {
+  //     DiskMetaFile::printAllEntries(only_file_meta_data);
+  //     MemoryBuffer::getCurrentBufferStatistics();
+  //     DiskMetaFile::getMetaStatistics();
+  //   }
     
-   //  Query::range_query_experiment();
+  //  //  Query::range_query_experiment();
   
 
-    if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-      printEmulationOutput(_env);
-  }
-  DiskMetaFile::clearAllEntries();
+  //   if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //     printEmulationOutput(_env);
+  // }
+  // DiskMetaFile::clearAllEntries();
   
-  return 0;
+  // return 0;
 
-    
+  // Sequential Evaluation  
   // Issuing INSERTS
   // float selectivities[25] = {1, 25, 50, 75, 95};
 
@@ -171,44 +173,48 @@ int main(int argc, char *argvx[]) {
   //   DiskMetaFile::clearAllEntries();
   // }
 
-  // for (int i = 0; i < 25; i++) {
-  //   cout << "Round " << i << endl;
 
-  //   int only_file_meta_data = 0;
-  //   for (int j = 0; j < 5; j++) {
-  //     std::cerr << "Issuing inserts ... " << std::endl << std::flush;
+  // Non Sequential
+  float selectivities[5] = {1, 25, 50, 75, 95};
+  for (int i = 0; i < 5; i++) {
+    int only_file_meta_data = 0;
+    curr_selectivity = selectivities[i];
 
-  //     WorkloadGenerator workload_generator;
-  //     workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);
+    for (int j = 0; j < 10; j++) {
+      insert_time = j + 1;
+      std::cerr << "Issuing inserts ... " << std::endl << std::flush;
 
-  //     std::cout << "Workload Generated!" << std::endl;
+      WorkloadGenerator workload_generator;
+      workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);
 
-  //     if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-  //     {
-  //       int s = runWorkload(_env);
-  //       std::cout << "Insert complete ... " << std::endl << std::flush;
-  //       //DiskMetaFile::printAllEntries(only_file_meta_data);
-  //       MemoryBuffer::getCurrentBufferStatistics();
-  //       DiskMetaFile::getMetaStatistics();
+      std::cout << "Workload Generated!" << std::endl;
 
-  //       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-  //       {
-  //         DiskMetaFile::printAllEntries(only_file_meta_data);
-  //         MemoryBuffer::getCurrentBufferStatistics();
-  //         DiskMetaFile::getMetaStatistics();
-  //       }
+      if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+      {
+        int s = runWorkload(_env);
+        std::cout << "Insert complete ... " << std::endl << std::flush;
+        //DiskMetaFile::printAllEntries(only_file_meta_data);
+        MemoryBuffer::getCurrentBufferStatistics();
+        DiskMetaFile::getMetaStatistics();
 
-  //       for (int j = 0; j < 2; j++) {
-  //         Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv");
-  //       }
+        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+        {
+          DiskMetaFile::printAllEntries(only_file_meta_data);
+          MemoryBuffer::getCurrentBufferStatistics();
+          DiskMetaFile::getMetaStatistics();
+        }
 
-  //       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-  //         printEmulationOutput(_env);
-  //     }
-  //   }
+        for (int k = 0; k < 50; k++) {
+          Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv", insert_time);
+        }
 
-  //   DiskMetaFile::clearAllEntries();
-  // }
+        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+          printEmulationOutput(_env);
+      }
+    }
+
+    DiskMetaFile::clearAllEntries();
+  }
 
   return 0;
 
@@ -402,9 +408,9 @@ int runWorkload(EmuEnv* _env) {
   fout2.open("insert_write_file_count.csv", ios::out | ios::app);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
-    fout2 << "Insert Num, " << "Write File Count" << "\n";
+    fout2 << "Insert Num, Curr Selectivity, Write File Count, Insert Time" << "\n";
   }
-  fout2 << _env->num_inserts  << "," << write_file_count << endl;
+  fout2 << _env->num_inserts << "," << curr_selectivity << "," << write_file_count << "," << insert_time << endl;
 
   return write_file_count;
 }

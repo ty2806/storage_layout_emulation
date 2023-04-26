@@ -40,7 +40,7 @@ public:
     static void secondaryRangeQuery (int lowerlimit, int upperlimit);
     static void vanilla_range_query (int lowerlimit, int upperlimit);
 
-    static void range_query_compaction_experiment(float selectivity, string file);
+    static void range_query_compaction_experiment(float selectivity, string file, int insertion);
 
     static void range_query_experiment();
     static void sec_range_query_experiment();
