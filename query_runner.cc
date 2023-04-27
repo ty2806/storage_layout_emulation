@@ -203,13 +203,11 @@ void Query::vanilla_range_query (int lowerlimit, int upperlimit) {
                 if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
                 continue;
                 }
-                else {
-                  range_occurances++;
-                }
               }
             }
           }
         }
+        range_occurances++;
       }
       moving_head = moving_head->next_file_ptr;
     }
@@ -374,12 +372,12 @@ int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompact
                                 match = 0;
                         }
                     }
-                  range_occurances++;
                 }
               }
             }
           }
         }
+        range_occurances++;
       }
       moving_head = moving_head->next_file_ptr;
     }
