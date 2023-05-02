@@ -444,6 +444,7 @@ void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
 
 int Query::pointQuery (int key)
 {
+    int read_file_count = 0;
   for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
   {
     SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
@@ -453,6 +454,7 @@ int Query::pointQuery (int key)
       if (moving_head->min_sort_key > key)
         break;
       if (moving_head->min_sort_key <= key && key <= moving_head->max_sort_key) {
+          read_file_count += 1;
         for (int k = 0; k < moving_head->tile_vector.size(); k++)
         {
           DeleteTile delete_tile = moving_head->tile_vector[k];
@@ -465,7 +467,7 @@ int Query::pointQuery (int key)
               if (page.min_sort_key <= key && key <= page.max_sort_key) {
                 for (int m = 0; m < page.kv_vector.size(); m++) {
                   if (key == page.kv_vector[m].first.first) {
-                    return l + 1;
+                    return read_file_count;
                   }
                 }
               }
@@ -476,7 +478,7 @@ int Query::pointQuery (int key)
       moving_head = moving_head->next_file_ptr;
     }
   }
-  return -1;
+  return read_file_count;
 }
 
 void Query::pointQueryRunner (int iterations)
