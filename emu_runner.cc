@@ -123,7 +123,7 @@ int main(int argc, char *argvx[]) {
   //     DiskMetaFile::getMetaStatistics();
   //   }
     
-  //  //  Query::range_query_experiment();
+  //    Query::range_query_experiment();
   
 
   //   if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
@@ -134,11 +134,97 @@ int main(int argc, char *argvx[]) {
   // return 0;
 
   // Sequential Evaluation  
-  // Issuing INSERTS
-  // float selectivities[25] = {1, 25, 50, 75, 95};
-
+  // float selectivities[5] = {1, 25, 50, 75, 95};
+  // float QueryDrivenCompactionSelectivities[3] = {0.25, 0.5, 0.75};
   // for (int i = 0; i < 5; i++) {
-  //   cout << "Round " << i << endl;
+  //   for (int k = 0; k < 3; k++) {
+  //       float QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[k];
+  //       std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+  //       WorkloadGenerator workload_generator;
+  //       workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+
+  //       std::cout << "Workload Generated!" << std::endl;
+
+  //       int only_file_meta_data = 0;
+
+  //       if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+  //       {
+  //         int s = runWorkload(_env);
+  //         std::cout << "Insert complete ... " << std::endl << std::flush; 
+  //         //DiskMetaFile::printAllEntries(only_file_meta_data);
+  //         MemoryBuffer::getCurrentBufferStatistics();
+  //         DiskMetaFile::getMetaStatistics();
+
+  //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //         {
+  //           DiskMetaFile::printAllEntries(only_file_meta_data);
+  //           MemoryBuffer::getCurrentBufferStatistics();
+  //           DiskMetaFile::getMetaStatistics();
+  //         }
+          
+  //         for (int j = 0; j < 500; j++) {
+  //           Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_sequential.csv", 1, QueryDrivenCompactionSelectivity);
+  //         }
+
+  //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //           printEmulationOutput(_env);
+  //       }
+  //       DiskMetaFile::clearAllEntries();
+  //   }
+    
+  // }
+  // return 0;
+
+
+  // Non Sequential
+  float selectivities[5] = {1, 25, 50, 75, 95};
+  float QueryDrivenCompactionSelectivities[3] = {0.25, 0.5, 0.75};
+  for (int i = 0; i < 5; i++) {
+    for (int l = 0; l < 3; l++) {
+      float QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
+      int only_file_meta_data = 0;
+      curr_selectivity = selectivities[i];
+
+      for (int j = 0; j < 5; j++) {
+        insert_time = j + 1;
+        std::cerr << "Issuing inserts ... " << std::endl << std::flush;
+
+        WorkloadGenerator workload_generator;
+        workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);
+
+        std::cout << "Workload Generated!" << std::endl;
+
+        if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+        {
+          int s = runWorkload(_env);
+          std::cout << "Insert complete ... " << std::endl << std::flush;
+          //DiskMetaFile::printAllEntries(only_file_meta_data);
+          MemoryBuffer::getCurrentBufferStatistics();
+          DiskMetaFile::getMetaStatistics();
+
+          if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+          {
+            DiskMetaFile::printAllEntries(only_file_meta_data);
+            MemoryBuffer::getCurrentBufferStatistics();
+            DiskMetaFile::getMetaStatistics();
+          }
+
+          for (int k = 0; k < 100; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
+
+          if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+            printEmulationOutput(_env);
+        }
+      }
+
+      DiskMetaFile::clearAllEntries();
+    }
+  }
+
+  return 0;
+
+  // if (_env->num_inserts > 0) 
+  // {
+  //   // if (_env->verbosity >= 1) 
   //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
   //   WorkloadGenerator workload_generator;
@@ -148,7 +234,7 @@ int main(int argc, char *argvx[]) {
 
   //   int only_file_meta_data = 0;
 
-  //   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+  //   if(_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
   //   {
   //     int s = runWorkload(_env);
   //     std::cout << "Insert complete ... " << std::endl << std::flush; 
@@ -162,211 +248,129 @@ int main(int argc, char *argvx[]) {
   //       MemoryBuffer::getCurrentBufferStatistics();
   //       DiskMetaFile::getMetaStatistics();
   //     }
+
+  //       // cout << "Running Range Query..." << endl;
+  //       // Query::range_query_experiment();
       
-  //     for (int j = 0; j < 50; j++) {
-  //       Query::range_query_compaction_experiment(selectivities[i], "compaction_sequential.csv");
+  //     // Query::checkDeleteCount(Query::delete_key);
+  //     // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
+  //     // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
+  //     // Query::pointQueryRunner(Query::iterations_point_query);
+
+  //     // cout << "H" << "\t" 
+  //     //   << "DKey" << "\t" 
+  //     //   << "Full_Drop" << "\t" 
+  //     //   << "Partial_Drop" << "\t" 
+  //     //   << "No_Drop" << "\t\t" 
+  //     //   << "RKEYs" << "\t" 
+  //     //   << "Occurance" << "\t" 
+  //     //   << "SRKEYs" << "\t" 
+  //     //   << "Occurance" << "\t" 
+  //     //   << "P_iter" << "\t\t" 
+  //     //   << "Sumpid" << "\t\t" 
+  //     //   << "Avgpid" << "\t\t" 
+  //     //   << "Found" << "\t\t" 
+  //     //   << "NtFound" << "\n";
+
+  //     // cout << _env->delete_tile_size_in_pages;
+  //     // cout.setf(ios::right);
+  //     // cout.precision(4);
+  //     // cout.width(10);
+  //     // cout << Query::delete_key;
+  //     // cout.width(11);
+  //     // cout << Query::complete_delete_count;
+  //     // cout.width(18);
+  //     // cout << Query::partial_delete_count;
+  //     // cout.width(12);
+  //     // cout << Query::not_possible_delete_count;
+  //     // cout.width(12);
+  //     // cout << Query::range_start_key << " " << Query::range_end_key;
+  //     // cout.width(9);
+  //     // cout << Query::range_occurances;
+  //     // cout.width(11);
+  //     // cout << Query::sec_range_start_key << " " << Query::sec_range_end_key;
+  //     // cout.width(9);
+  //     // cout << Query::secondary_range_occurances;
+  //     // cout.width(15);
+  //     // cout << Query::iterations_point_query;
+  //     // cout.width(16);
+  //     // cout << Query::sum_page_id;
+  //     // cout.width(16);
+  //     // cout << Query::sum_page_id/(Query::found_count * 1.0);
+  //     // cout.width(15);
+  //     // cout << Query::found_count;
+  //     // cout.width(17);
+  //     // cout << Query::not_found_count << "\n";
+
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //       printEmulationOutput(_env);
+
+  //   }
+  //   else if (_env->delete_tile_size_in_pages == -1 && _env->lethe_new == 0)
+  //   {
+  //     for (int i = 1; i <= _env->buffer_size_in_pages; i = i*2)
+  //     {
+  //       cout << "Running for delete tile size: " << i << " ..." << endl;
+  //       _env->delete_tile_size_in_pages = i;
+  //       int s = runWorkload(_env);
+  //       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //       {
+  //         DiskMetaFile::printAllEntries(only_file_meta_data);
+  //         MemoryBuffer::getCurrentBufferStatistics();
+  //         DiskMetaFile::getMetaStatistics();
+  //       }
+
+  //       //cout << "Running Delete Query..." << endl;
+  //       //Query::delete_query_experiment();
+  //       cout << "Running Range Query..." << endl;
+  //       Query::range_query_experiment();
+  //       //cout << "Running Secondary Range Query..." << endl;
+  //       //Query::sec_range_query_experiment();
+  //       //cout << "Running Point Query..." << endl;
+  //       // Query::point_query_experiment();
+        
+  //       DiskMetaFile::clearAllEntries();
+  //       WorkloadExecutor::counter = 0;
+        
+  //       if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //         printEmulationOutput(_env);
   //     }
+  //   }
+  //   else if (_env->lethe_new == 1 || _env->lethe_new == 2)
+  //   {
+  //     int s = runWorkload(_env);
+  //     // DiskMetaFile::printAllEntries(only_file_meta_data);
+  //     MemoryBuffer::getCurrentBufferStatistics();
+  //     DiskMetaFile::getMetaStatistics();
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //     {
+  //       DiskMetaFile::printAllEntries(only_file_meta_data);
+  //       MemoryBuffer::getCurrentBufferStatistics();
+  //       DiskMetaFile::getMetaStatistics();
+  //     }
+
+  //     cout << "Running Delete Query..." << endl;
+  //     Query::delete_query_experiment();
+  //     cout << "Running Range Query..." << endl;
+  //     Query::range_query_experiment();
+  //     cout << "Running Secondary Range Query..." << endl;
+  //     Query::sec_range_query_experiment();
+  //     cout << "Running Point Query..." << endl;
+  //     Query::new_point_query_experiment();
+
+  //     DiskMetaFile::clearAllEntries();
+  //     WorkloadExecutor::counter = 0;
+  //     printEmulationOutput(_env);
 
   //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
   //       printEmulationOutput(_env);
   //   }
-  //   DiskMetaFile::clearAllEntries();
+
+  //   //srand(time(0));
+  //   //WorkloadExecutor::getWorkloadStatictics(_env);
+  //   //assert(_env->num_inserts == inserted); 
   // }
-
-
-  // Non Sequential
-  float selectivities[5] = {1, 25, 50, 75, 95};
-  for (int i = 0; i < 5; i++) {
-    int only_file_meta_data = 0;
-    curr_selectivity = selectivities[i];
-
-    for (int j = 0; j < 10; j++) {
-      insert_time = j + 1;
-      std::cerr << "Issuing inserts ... " << std::endl << std::flush;
-
-      WorkloadGenerator workload_generator;
-      workload_generator.generateWorkload((long)_env->num_inserts / 5, (long)_env->entry_size, _env->correlation);
-
-      std::cout << "Workload Generated!" << std::endl;
-
-      if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-      {
-        int s = runWorkload(_env);
-        std::cout << "Insert complete ... " << std::endl << std::flush;
-        //DiskMetaFile::printAllEntries(only_file_meta_data);
-        MemoryBuffer::getCurrentBufferStatistics();
-        DiskMetaFile::getMetaStatistics();
-
-        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-        {
-          DiskMetaFile::printAllEntries(only_file_meta_data);
-          MemoryBuffer::getCurrentBufferStatistics();
-          DiskMetaFile::getMetaStatistics();
-        }
-
-        for (int k = 0; k < 50; k++) {
-          Query::range_query_compaction_experiment(selectivities[i], "compaction_nonsequential.csv", insert_time);
-        }
-
-        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-          printEmulationOutput(_env);
-      }
-    }
-
-    DiskMetaFile::clearAllEntries();
-  }
-
-  return 0;
-
-  if (_env->num_inserts > 0) 
-  {
-    // if (_env->verbosity >= 1) 
-    std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
-    
-    WorkloadGenerator workload_generator;
-    workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
-
-    std::cout << "Workload Generated!" << std::endl;
-
-    int only_file_meta_data = 0;
-
-    if(_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-    {
-      int s = runWorkload(_env);
-      std::cout << "Insert complete ... " << std::endl << std::flush; 
-      //DiskMetaFile::printAllEntries(only_file_meta_data);
-      MemoryBuffer::getCurrentBufferStatistics();
-      DiskMetaFile::getMetaStatistics();
-
-      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-      {
-        DiskMetaFile::printAllEntries(only_file_meta_data);
-        MemoryBuffer::getCurrentBufferStatistics();
-        DiskMetaFile::getMetaStatistics();
-      }
-
-        // cout << "Running Range Query..." << endl;
-        // Query::range_query_experiment();
-      
-      // Query::checkDeleteCount(Query::delete_key);
-      // Query::rangeQuery(Query::range_start_key, Query::range_end_key);
-      // Query::secondaryRangeQuery(Query::sec_range_start_key, Query::sec_range_end_key);
-      // Query::pointQueryRunner(Query::iterations_point_query);
-
-      // cout << "H" << "\t" 
-      //   << "DKey" << "\t" 
-      //   << "Full_Drop" << "\t" 
-      //   << "Partial_Drop" << "\t" 
-      //   << "No_Drop" << "\t\t" 
-      //   << "RKEYs" << "\t" 
-      //   << "Occurance" << "\t" 
-      //   << "SRKEYs" << "\t" 
-      //   << "Occurance" << "\t" 
-      //   << "P_iter" << "\t\t" 
-      //   << "Sumpid" << "\t\t" 
-      //   << "Avgpid" << "\t\t" 
-      //   << "Found" << "\t\t" 
-      //   << "NtFound" << "\n";
-
-      // cout << _env->delete_tile_size_in_pages;
-      // cout.setf(ios::right);
-      // cout.precision(4);
-      // cout.width(10);
-      // cout << Query::delete_key;
-      // cout.width(11);
-      // cout << Query::complete_delete_count;
-      // cout.width(18);
-      // cout << Query::partial_delete_count;
-      // cout.width(12);
-      // cout << Query::not_possible_delete_count;
-      // cout.width(12);
-      // cout << Query::range_start_key << " " << Query::range_end_key;
-      // cout.width(9);
-      // cout << Query::range_occurances;
-      // cout.width(11);
-      // cout << Query::sec_range_start_key << " " << Query::sec_range_end_key;
-      // cout.width(9);
-      // cout << Query::secondary_range_occurances;
-      // cout.width(15);
-      // cout << Query::iterations_point_query;
-      // cout.width(16);
-      // cout << Query::sum_page_id;
-      // cout.width(16);
-      // cout << Query::sum_page_id/(Query::found_count * 1.0);
-      // cout.width(15);
-      // cout << Query::found_count;
-      // cout.width(17);
-      // cout << Query::not_found_count << "\n";
-
-      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-        printEmulationOutput(_env);
-
-    }
-    else if (_env->delete_tile_size_in_pages == -1 && _env->lethe_new == 0)
-    {
-      for (int i = 1; i <= _env->buffer_size_in_pages; i = i*2)
-      {
-        cout << "Running for delete tile size: " << i << " ..." << endl;
-        _env->delete_tile_size_in_pages = i;
-        int s = runWorkload(_env);
-        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-        {
-          DiskMetaFile::printAllEntries(only_file_meta_data);
-          MemoryBuffer::getCurrentBufferStatistics();
-          DiskMetaFile::getMetaStatistics();
-        }
-
-        //cout << "Running Delete Query..." << endl;
-        //Query::delete_query_experiment();
-        cout << "Running Range Query..." << endl;
-        Query::range_query_experiment();
-        //cout << "Running Secondary Range Query..." << endl;
-        //Query::sec_range_query_experiment();
-        //cout << "Running Point Query..." << endl;
-        // Query::point_query_experiment();
-        
-        DiskMetaFile::clearAllEntries();
-        WorkloadExecutor::counter = 0;
-        
-        if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-          printEmulationOutput(_env);
-      }
-    }
-    else if (_env->lethe_new == 1 || _env->lethe_new == 2)
-    {
-      int s = runWorkload(_env);
-      // DiskMetaFile::printAllEntries(only_file_meta_data);
-      MemoryBuffer::getCurrentBufferStatistics();
-      DiskMetaFile::getMetaStatistics();
-      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-      {
-        DiskMetaFile::printAllEntries(only_file_meta_data);
-        MemoryBuffer::getCurrentBufferStatistics();
-        DiskMetaFile::getMetaStatistics();
-      }
-
-      cout << "Running Delete Query..." << endl;
-      Query::delete_query_experiment();
-      cout << "Running Range Query..." << endl;
-      Query::range_query_experiment();
-      cout << "Running Secondary Range Query..." << endl;
-      Query::sec_range_query_experiment();
-      cout << "Running Point Query..." << endl;
-      Query::new_point_query_experiment();
-
-      DiskMetaFile::clearAllEntries();
-      WorkloadExecutor::counter = 0;
-      printEmulationOutput(_env);
-
-      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-        printEmulationOutput(_env);
-    }
-
-    //srand(time(0));
-    //WorkloadExecutor::getWorkloadStatictics(_env);
-    //assert(_env->num_inserts == inserted); 
-  }
-  return 0;
+  // return 0;
 }
 
 int runWorkload(EmuEnv* _env) {

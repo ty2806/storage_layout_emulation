@@ -138,18 +138,17 @@ void Query::delete_query_experiment()
   fout1.close();
 }
 
-void Query::range_query_compaction_experiment(float selectivity, string file, int insertion)
+void Query::range_query_compaction_experiment(float selectivity, string file, int insertion, double QueryDrivenCompactionSelectivity)
 {
   EmuEnv* _env = EmuEnv::getInstance();
   int range_iterval_1, range_query_start_1, range_query_end_1;
-  double QueryDrivenCompactionSelectivity = 1;
 
   fstream fout2;
   fout2.open(file, ios::out | ios::app);
   fout2.seekp(0, std::ios::end);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
-    fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count, insert time" << "\n";
+    fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "," << "write file count, insert time, QueryDrivenCompactionSelectivity" << "\n";
   }
   if (_env->correlation == 0)
   {
@@ -165,7 +164,7 @@ void Query::range_query_compaction_experiment(float selectivity, string file, in
     range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
   }
   int write_file_count = Query::rangeQuery(range_query_start_1, range_query_end_1, QueryDrivenCompactionSelectivity);
-  fout2 << _env->srq_count << "," << selectivity << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << "," << insertion << endl;
+  fout2 << _env->srq_count << "," << selectivity << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << "," << write_file_count << "," << insertion << ',' << QueryDrivenCompactionSelectivity << endl;
   
   fout2.close();
 
@@ -216,38 +215,35 @@ void Query::vanilla_range_query (int lowerlimit, int upperlimit) {
   // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
 }
 
-void Query::range_query_experiment()
+void Query::range_query_experiment(float selectivity)
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  float selectivity[5] = {1, 25, 50, 75, 95};
   int range_iterval_1, range_query_start_1, range_query_end_1;
 
   fstream fout2;
 
-  fout2.open("no_compaction_sequential.csv", ios::out | ios::app);
+  fout2.open("no_compaction_nonsequential.csv", ios::out | ios::app);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
     fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
   }
 
-  for (int i = 0; i < 5 ; i++ )
+  if (_env->correlation == 0)
   {
-    if (_env->correlation == 0)
-    {
-      range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE * selectivity[i] / 100;
-      std::uniform_int_distribution<int> distribution(0, WorkloadGenerator::KEY_DOMAIN_SIZE-range_iterval_1-1);
-      range_query_start_1 = distribution(generator);
-      range_query_end_1 = range_query_start_1 + range_iterval_1;
-    }
-    else
-    {
-      range_iterval_1 = _env->num_inserts * selectivity[i] / 100;
-      range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
-      range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
-    }
-    Query::vanilla_range_query(range_query_start_1, range_query_end_1);
-    fout2 << _env->srq_count << "," << selectivity[i] << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
+    range_iterval_1 = WorkloadGenerator::KEY_DOMAIN_SIZE * selectivity / 100;
+    std::uniform_int_distribution<int> distribution(0, WorkloadGenerator::KEY_DOMAIN_SIZE-range_iterval_1-1);
+    range_query_start_1 = distribution(generator);
+    range_query_end_1 = range_query_start_1 + range_iterval_1;
   }
+  else
+  {
+    range_iterval_1 = _env->num_inserts * selectivity / 100;
+    range_query_start_1 = _env->num_inserts / 2 - range_iterval_1 / 2;
+    range_query_end_1 = _env->num_inserts / 2 + range_iterval_1 / 2;
+  }
+  Query::vanilla_range_query(range_query_start_1, range_query_end_1);
+  fout2 << _env->srq_count << "," << selectivity << "%" << "," << range_query_start_1 << "," << range_query_end_1 << "," << Query::range_occurances << endl;
+  
   fout2.close();
 }
 
