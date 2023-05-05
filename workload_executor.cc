@@ -297,12 +297,6 @@ int Utility::QueryDrivenCompaction(vector < pair < pair < long, long >, string >
     int write_file_count = 0;
     int last_level = DiskMetaFile::getTotalLevelCount();
 
-    // Check if there are at least two levels in the database
-    if (last_level < 2) {
-        std::cout << "There is only 1 level in LSM Tree. No Query Driven Compaction will perform." << std::endl;
-        return write_file_count;
-    }
-
     // Loop through all levels except the first and last
     for (int i = 2; i < last_level; i++) {
         // Perform sort-merge-repartition on the key-value pairs in the vector at this level
