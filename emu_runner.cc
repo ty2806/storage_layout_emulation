@@ -97,7 +97,7 @@ int main(int argc, char *argvx[]) {
   // fout3.close();
   // fout4.close();
 
-  // vanilla write count
+  // vanilla write count for 5 and 10 times insertions
   // for (int i = 0; i < 10; i++) {
   //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
@@ -132,7 +132,7 @@ int main(int argc, char *argvx[]) {
   
   // return 0;
 
-  // vanilla sequential evaluation:
+  // vanilla sequential evaluation for different selectivities
   // float selectivities[5] = {1, 25, 50, 75, 95};
   // for (int i = 0; i < 5; i++) {
   //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
@@ -160,6 +160,7 @@ int main(int argc, char *argvx[]) {
   //       DiskMetaFile::getMetaStatistics();
   //     }
 
+  //     // each time apply 500 times range queries for experiments
   //     for (int j = 0; j < 500; j++) {
   //       Query::range_query_experiment(selectivities[i]);
   //     }
@@ -172,10 +173,12 @@ int main(int argc, char *argvx[]) {
   
   // return 0;
 
-  // Sequential Evaluation  
+  // Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
   // float selectivities[5] = {1, 25, 50, 75, 95};
   // float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
+  // // loop throught selectivities
   // for (int i = 0; i < 5; i++) {
+  //   // loop through QueryDrivenCompactionSelectivities
   //   for (int k = 0; k < 4; k++) {
   //       float QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[k];
   //       std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
@@ -201,10 +204,11 @@ int main(int argc, char *argvx[]) {
   //           DiskMetaFile::getMetaStatistics();
   //         }
           
-  //         for (int j = 0; j < 500; j++) {
+  //         // each time applies consecutive range_query_compaction_experiment
+  //         for (int j = 0; j < 100; j++) {
   //           Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_sequential.csv", 1, QueryDrivenCompactionSelectivity);
   //         }
-  //         Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[k]);
+  //         Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[k], insert_time);
 
   //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
   //           printEmulationOutput(_env);
@@ -215,11 +219,12 @@ int main(int argc, char *argvx[]) {
   // }
   // return 0;
 
-
-  // Non Sequential
+  // Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
   float selectivities[5] = {1, 25, 50, 75, 95};
   float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
+  // loop through selectivities
   for (int i = 0; i < 5; i++) {
+    // loop through QueryDrivenCompactionSelectivities
     for (int l = 0; l < 4; l++) {
       QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
       int only_file_meta_data = 0;
@@ -249,9 +254,11 @@ int main(int argc, char *argvx[]) {
             DiskMetaFile::getMetaStatistics();
           }
 
+          // apply consecutive range_query_compaction_experiment 
           for (int k = 0; k < 50; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
 
-          Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[l], insert_time);
+          // apply consecutive point_query_experiment  
+          for (int k = 0; k < 50; k++) Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[l], insert_time);
 
           if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
             printEmulationOutput(_env);
@@ -456,7 +463,7 @@ int runWorkload(EmuEnv* _env) {
   if (is_empty) {
     fout2 << "Insert Num, Curr Selectivity, QueryDrivenCompactionSelectivity, Write File Count, Insert Time" << "\n";
   }
-  fout2 << _env->num_inserts / 10 << "," << curr_selectivity << ","  << QueryDrivenCompactionSelectivity << "," << write_file_count << "," << insert_time << endl;
+  fout2 << _env->num_inserts / insert_time << "," << curr_selectivity << ","  << QueryDrivenCompactionSelectivity << "," << write_file_count << "," << insert_time << endl;
 
   return write_file_count;
 }
