@@ -327,80 +327,98 @@ void Query::new_point_query_experiment ()
   fout4.close();
 }
 
+
 int Query::rangeQuery (int lowerlimit, int upperlimit, double QueryDrivenCompactionSelectivity) {
 
-  range_occurances = 0;
-  vector < pair < pair < long, long >, string > > vector_to_compact;
-  int range = upperlimit - lowerlimit;
-  int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
-  int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
-  for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++)
-  {
-    SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
-    SSTFile *moving_head = level_i_head;
-    int match = 0;
-    while (moving_head)
-    {
-      if (moving_head->min_sort_key > upperlimit)
-        break;
-      if (moving_head->max_sort_key < lowerlimit ) {
-        moving_head = moving_head->next_file_ptr;
-        continue;
-      } 
-      else {
-        for (const auto& delete_tile : moving_head->tile_vector)
-        {
-          if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
-            continue;
-          }
-          else {
-            for (const auto& page : delete_tile.page_vector)
-            {
-              if (page.min_sort_key > 0)
-              {
-                if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
+    // Initialize variables
+    range_occurances = 0;
+    vector < pair < pair < long, long >, string > > vector_to_compact;
+    int range = upperlimit - lowerlimit;
+
+    // Calculate the lower and upper bounds for the center of the range according to QueryDrivenCompactionSelectivity
+    int centerLowerBound = lowerlimit + static_cast<int>(range * (1.0 - QueryDrivenCompactionSelectivity) / 2);
+    int centerUpperBound = centerLowerBound + static_cast<int>(range * QueryDrivenCompactionSelectivity);
+
+    // Loop through all levels of the database
+    for (int i = 1; i <= DiskMetaFile::getTotalLevelCount(); i++) {
+        // Get the head of the SST file for this level
+        SSTFile *level_i_head = DiskMetaFile::getSSTFileHead(i);
+        SSTFile *moving_head = level_i_head;
+
+        // Loop through all SST files in this level
+        while (moving_head) {
+            // Check if this SST file is beyond the range we are interested in
+            if (moving_head->min_sort_key > upperlimit) {
+                break;
+            }
+            // Check if this SST file is completely before the range we are interested in
+            if (moving_head->max_sort_key < lowerlimit ) {
+                moving_head = moving_head->next_file_ptr;
                 continue;
-                }
-                else {
-                    for (auto & m : page.kv_vector)
-                    {
-                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound and i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
-                            for(auto & p : vector_to_compact) {
-                                if (p.first.first == m.first.first) {
-                                    match++;
-                                    break;
+            }
+            else {
+                // Loop through all tiles in this SST file
+                for (const auto& delete_tile : moving_head->tile_vector) {
+                    // Check if this tile is beyond the range we are interested in
+                    if (delete_tile.min_sort_key > upperlimit || delete_tile.max_sort_key < lowerlimit) {
+                        continue;
+                    }
+                    else {
+                        // Loop through all pages in this tile
+                        for (const auto& page : delete_tile.page_vector) {
+                            // Check if this page is beyond the range we are interested in
+                            if (page.min_sort_key > 0) {
+                                if (page.min_sort_key > upperlimit || page.max_sort_key < lowerlimit) {
+                                    continue;
+                                }
+                                else {
+                                    // Loop through all key-value pairs in this page
+                                    for (auto & m : page.kv_vector) {
+                                        // Check if the key is within range query compaction range
+                                        if (m.first.first >= centerLowerBound and m.first.first <= centerUpperBound and i >= 2 and i < DiskMetaFile::getTotalLevelCount()) {
+                                            // Check if we have already seen this key in a previous SST file
+                                            int match = 0;
+                                            for(auto & p : vector_to_compact) {
+                                                if (p.first.first == m.first.first) {
+                                                    match++;
+                                                    break;
+                                                }
+                                            }
+                                            // If we have not seen this key before, add it to the vector to be compacted
+                                            if (match == 0)
+                                                vector_to_compact.push_back(m);
+                                            else
+                                                match = 0;
+                                        }
+                                    }
                                 }
                             }
-                            if (match == 0)
-                                vector_to_compact.push_back(m);
-                            else
-                                match = 0;
                         }
                     }
                 }
-              }
+                // Increment the number of times we have encountered the range in this level
+                range_occurances++;
             }
-          }
+            // Move to the next SST file in this level
+            moving_head = moving_head->next_file_ptr;
         }
-        range_occurances++;
-      }
-      moving_head = moving_head->next_file_ptr;
     }
-  }
-    // std::cout << "(Range Query)" << std::endl;
-    // std::cout << "Pages traversed : " << range_occurances << std::endl << std::endl;
-  if (!vector_to_compact.empty()) {
-      cout << "range query completes. Starting query driven compaction. vector size:"<< vector_to_compact.size() << endl;
-      std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
-      int write_file_count = Utility::QueryDrivenCompaction(vector_to_compact);
-      return write_file_count;
-  }
-  else {
-      cout << "Nothing to compact in range query " << lowerlimit << " to " << upperlimit << endl;
-      return 0;
-  }
+
+    // Check if there are any key-value pairs to compact
+    if (!vector_to_compact.empty()) {
+        // Perform query-driven compaction on the key-value pairs we found and sort the resulting vector by sort key
+        cout << "range query completes. Starting query driven compaction. vector size:"<< vector_to_compact.size() << endl;
+        std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
+        int write_file_count = Utility::QueryDrivenCompaction(vector_to_compact);
+        return write_file_count;
+    }
+    else {
+        cout << "Nothing to compact in range query " << lowerlimit << " to " << upperlimit << endl;
+        return 0;
+    }
 
 }
+
 
 void Query::secondaryRangeQuery (int lowerlimit, int upperlimit) {
 

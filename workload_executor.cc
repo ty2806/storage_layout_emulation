@@ -68,6 +68,8 @@ int Utility::minInt(int a, int b)
   }
 }
 
+// this function implement compaction
+// return the number of SST files written to the level
 int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
   EmuEnv *_env = EmuEnv::getInstance();
@@ -82,6 +84,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
   SSTFile *moving_head_prev = head_level_1;   //Need this to overwrite current overlapping file
   SSTFile *end_ptr = moving_head;
 
+  // if the level is empty, add new SST files to the level
   if (!head_level_1)
   {
     for (int i = 0; i < file_count; i++)
@@ -113,6 +116,7 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
       vector_to_populate_file.clear();
     }
   }
+  // if the level is not empty, insert SST files
   else
   {
     //Calculating end pointer
@@ -226,107 +230,131 @@ int Utility::compactAndFlush(vector < pair < pair < long, long >, string > > vec
   return file_count;
 }
 
+// sort merge and compact the vector_to_compact to a given level
+// return the number of SST files written to the level
+// this function will invoke checkAndAdjustLevelSaturation and check if a level is saturated and conduct comaction accordingly
 int Utility::sortAndWrite(vector < pair < pair < long, long >, string > > vector_to_compact, int level_to_flush_in)
 {
-  EmuEnv *_env = EmuEnv::getInstance();
-  SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
-  int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
-  int write_file_count = 0;
+    // Initialize variables
+    EmuEnv *_env = EmuEnv::getInstance();
+    SSTFile *head_level_1 = DiskMetaFile::getSSTFileHead(level_to_flush_in);
+    int entries_per_file = _env->entries_per_page * _env->buffer_size_in_pages;
+    int write_file_count = 0;
 
-  std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
+    // Sort the key-value pairs by sort key
+    std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
 
-  if (!head_level_1)
-  {
-    if (MemoryBuffer::verbosity == 2)
-      std::cout << "NULL" << std::endl;
-
-    if (vector_to_compact.size() % _env->getDeleteTileSize(level_to_flush_in) != 0 && vector_to_compact.size() / _env->getDeleteTileSize(level_to_flush_in) < 1)
+    // If there is no SST file at this level, and the number of key-value pairs in the vector is not a multiple of the number of key-value pairs per delete tile, or there are less key-value pairs in the vector than the number of key-value pairs per delete tile, exit with an error message. Otherwise, perform compaction and flush on the key-value pairs in the vector.
+    if (!head_level_1)
     {
-      std::cout << " ERROR " << std::endl;
-      exit(1);
+        if (MemoryBuffer::verbosity == 2)
+            std::cout << "NULL" << std::endl;
+
+        if (vector_to_compact.size() % _env->getDeleteTileSize(level_to_flush_in) != 0 && vector_to_compact.size() / _env->getDeleteTileSize(level_to_flush_in) < 1)
+        {
+            std::cout << " ERROR " << std::endl;
+            exit(1);
+        }
+        else
+        {
+            write_file_count += compactAndFlush(vector_to_compact, level_to_flush_in);
+        }
     }
+
+    // If there is at least one SST file at this level, perform sort-merge on the key-value pairs in the vector and the key-value pairs in the SST files at this level, and then perform compaction and flush on the merged key-value pairs.
     else
     {
+        if (MemoryBuffer::verbosity == 2)
+            std::cout << "head not null anymore" << std::endl;
+
+        sortMerge(vector_to_compact, level_to_flush_in);
+
+        if (MemoryBuffer::verbosity == 1)   //UNCOMMENT
+        {
+            std::cout << "\nprinting before compacting " << std::endl;
+            for (int j = 0; j < vector_to_compact.size(); ++j)
+            {
+                std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
+                          << "\t" << std::endl;
+                if (j%8 == 7) cout << std::endl;
+            }
+        }
+
         write_file_count += compactAndFlush(vector_to_compact, level_to_flush_in);
     }
-  }
 
-  else
-  {
-    if (MemoryBuffer::verbosity == 2)
-      std::cout << "head not null anymore" << std::endl;
-
-    sortMerge(vector_to_compact, level_to_flush_in);
-    
-    if (MemoryBuffer::verbosity == 1)   //UNCOMMENT
-    {
-      std::cout << "\nprinting before compacting " << std::endl;
-      for (int j = 0; j < vector_to_compact.size(); ++j)
-      {
-        std::cout << "< " << vector_to_compact[j].first.first << ",  " << vector_to_compact[j].first.second << " >"
-                  << "\t" << std::endl;
-        if (j%8 == 7) cout << std::endl;
-      }
-    }
-
-    write_file_count += compactAndFlush(vector_to_compact, level_to_flush_in);
-  }
-  write_file_count += DiskMetaFile::checkAndAdjustLevelSaturation(level_to_flush_in);
-  return write_file_count;
+    // Check and adjust the level saturation, and return the number of files written
+    write_file_count += DiskMetaFile::checkAndAdjustLevelSaturation(level_to_flush_in);
+    return write_file_count;
 }
 
+
+// conduct query driven compaction
+// vector_to_compact: the range query result
 int Utility::QueryDrivenCompaction(vector < pair < pair < long, long >, string > > vector_to_compact)
 {
+    // Initialize variables
     int write_file_count = 0;
     int last_level = DiskMetaFile::getTotalLevelCount();
+
+    // Check if there are at least two levels in the database
     if (last_level < 2) {
         std::cout << "There is only 1 level in LSM Tree. No Query Driven Compaction will perform." << std::endl;
         return write_file_count;
     }
 
-    for (int i = 2; i < last_level; i++)
-    {
+    // Loop through all levels except the first and last
+    for (int i = 2; i < last_level; i++) {
+        // Perform sort-merge-repartition on the key-value pairs in the vector at this level
         write_file_count += sortMergeRepartition(vector_to_compact, i);
     }
 
+    // Perform sort and write on the key-value pairs in the vector at the last level
     write_file_count += sortAndWrite(vector_to_compact, last_level);
 
+    // Return the number of resulting files
     return write_file_count;
 }
+
 
 
 // merge and sort vector_to_compact at level_to_flush_in
 // This will merge all kv in SST files overlapping with vector_to_compact
 void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_sort)
 {
+    // Initialize variables
     SSTFile* moving_head = DiskMetaFile::getSSTFileHead(level_to_sort);
     long startval =  vector_to_compact[0].first.first;
     long endval =  vector_to_compact[vector_to_compact.size()-1].first.first;
     int match = 0;
 
+    // Print the size of the vector before merging (for verbosity level 2)
     if (MemoryBuffer::verbosity == 2)
         std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
 
+    // Loop through all SST files at the given level and merge overlapping key-value pairs into the vector
     while (moving_head)
     {
+        // Check if this SST file is completely before or after the range of interest
         if (moving_head->min_sort_key > endval || moving_head->max_sort_key < startval )
         {
             moving_head = moving_head->next_file_ptr;
             continue;
         }
-        //cout << "Performed Optimization :: Overlap FOUND" << endl;
 
-        for (const auto& delete_tile : moving_head->tile_vector)
-        {
-            for (const auto& page : delete_tile.page_vector)
-            {
-                for (auto & m : page.kv_vector)
-                {
+        // Loop through all tiles in this SST file
+        for (const auto& delete_tile : moving_head->tile_vector) {
+            // Loop through all pages in this tile
+            for (const auto& page : delete_tile.page_vector) {
+                // Loop through all key-value pairs in this page
+                for (auto & m : page.kv_vector) {
+                    // Check if this key has already been added to the vector
                     for(auto & p : vector_to_compact) {
                         if (p.first.first == m.first.first) {
                             match++;
                         }
                     }
+                    // If the key has not been added to the vector, add it
                     if (match == 0)
                         vector_to_compact.push_back(m);
                     else
@@ -334,20 +362,26 @@ void Utility::sortMerge(vector < pair < pair < long, long >, string > >& vector_
                 }
             }
         }
+        // Move to the next SST file at this level
         moving_head = moving_head->next_file_ptr;
     }
 
+    // Print the size of the vector after merging (for verbosity level 2)
     if (MemoryBuffer::verbosity == 2)
         std::cout << "Vector size after merging : " << vector_to_compact.size() << std::endl;
 
+    // Sort the vector by sort key
     std::sort(vector_to_compact.begin(), vector_to_compact.end(), Utility::sortbysortkey);
 }
+
 
 // merge and sort vector_to_compact at level_to_flush_in
 // All kv inside range of vector_to_compact will be merged
 // kv in SST files overlapping with vector_to_compact but outside range of vector_to_compact will be written back
+// return the number of SST files written to the LSM tree during this process
 int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > >& vector_to_compact, int level_to_flush_in)
 {
+    // Initialize variables
     SSTFile* level_head = DiskMetaFile::getSSTFileHead(level_to_flush_in);
     SSTFile* moving_head = level_head;
     long startval =  vector_to_compact[0].first.first;
@@ -356,11 +390,14 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
     vector < pair < pair < long, long >, string > > vector_overlapping;
     SSTFile* prev_head = nullptr;
 
+    // Print the size of the vector before merging (for verbosity level 2)
     if (MemoryBuffer::verbosity == 2)
         std::cout << "Vector size before merging : " << vector_to_compact.size() << std::endl;
 
+    // Loop through all SST files at the given level and merge overlapping key-value pairs into a separate vector
     while (moving_head)
     {
+        // Check if this SST file is completely after the range of interest
         if (moving_head->min_sort_key > endval) {
             if (prev_head != nullptr) {
                 prev_head->next_file_ptr = moving_head;
@@ -370,22 +407,23 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
             }
             break;
         }
+
+        // Check if this SST file is completely before the range of interest
         if (moving_head->max_sort_key < startval)
         {
             prev_head = moving_head;
             moving_head = moving_head->next_file_ptr;
             continue;
         }
-        //cout << "Performed Optimization :: Overlap FOUND" << endl;
+
+        // If this SST file overlaps with the range of interest, loop through all key-value pairs and add them to the corresponding vector
         if (prev_head != nullptr) {
             prev_head->next_file_ptr = nullptr;
         }
-        for (const auto& delete_tile : moving_head->tile_vector)
-        {
-            for (const auto& page : delete_tile.page_vector)
-            {
-                for (auto & m : page.kv_vector)
-                {
+        for (const auto& delete_tile : moving_head->tile_vector) {
+            for (const auto& page : delete_tile.page_vector) {
+                for (auto & m : page.kv_vector) {
+                    // if the kv pair is not overlapping with vector_to_compact, add it to vector_to_populate for future write back
                     if (m.first.first < startval || m.first.first > endval) {
                         vector_to_populate.push_back(m);
                     }
@@ -398,24 +436,29 @@ int Utility::sortMergeRepartition(vector < pair < pair < long, long >, string > 
         moving_head = moving_head->next_file_ptr;
     }
 
+    // Check if there are key-value pairs to compact and key-value pairs to write back
     if (!vector_to_populate.empty() and !vector_overlapping.empty()) {
+        // Sort the key-value pairs to keep by sort key
         std::sort(vector_to_populate.begin(), vector_to_populate.end(), Utility::sortbysortkey);
 
-        // todo:deal with the situation that the entire level is in vector_to_populate.
-        // currently set start head of this level to nullptr
+        // Check if the entire level is overlapping with vector_to_compact
         if (prev_head == nullptr && level_head == DiskMetaFile::getSSTFileHead(level_to_flush_in)) {
             DiskMetaFile::setSSTFileHead(nullptr, level_to_flush_in);
         }
 
+        // Perform compaction and flush on the key-value pairs to write back
         int write_file_count = compactAndFlush(vector_to_populate, level_to_flush_in);
         return write_file_count;
     }
     else {
+        // If there are no key-value pairs to write back, return 0
         return 0;
     }
 }
-// Class : WorkloadExecutor
 
+
+
+// Class : WorkloadExecutor
 int WorkloadExecutor::insert(long sortkey, long deletekey, string value)
 {
   EmuEnv* _env = EmuEnv::getInstance();
