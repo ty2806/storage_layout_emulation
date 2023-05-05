@@ -173,7 +173,7 @@ int main(int argc, char *argvx[]) {
   
   // return 0;
 
-  // Sequential Evaluation with Compaction for different selectivities and our QueryDrivenCompactionSelectivities
+  // Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
   // float selectivities[5] = {1, 25, 50, 75, 95};
   // float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
   // // loop throught selectivities
@@ -219,8 +219,7 @@ int main(int argc, char *argvx[]) {
   // }
   // return 0;
 
-
-  // Non Sequential Evaluation with Compaction for different selectivities and our QueryDrivenCompactionSelectivities
+  // Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
   float selectivities[5] = {1, 25, 50, 75, 95};
   float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
   // loop through selectivities

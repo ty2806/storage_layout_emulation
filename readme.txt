@@ -37,3 +37,14 @@ J = 1000000 [count of empty point queries]
 K = 1000000 [count of non-empty point queries]
 L = 10000 [count of short range queries]
 
+------------------------------------------------------
+Range Query Driven Compaction
+
+./emu_runner -i 100000 -P 20 -B 2 -E 1024 -T 5 -h 1 -c 0 -D 1000 -S 10 -F 10000
+
+The insertions are bounded by 100k, and the insert times and experiments are adjusted in int main() of emu_runner accordingly. 
+- vanilla write count for 5 and 10 times insertions
+- vanilla sequential evaluation for different selectivities
+- Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
+- Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
+
