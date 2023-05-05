@@ -98,39 +98,39 @@ int main(int argc, char *argvx[]) {
   // fout4.close();
 
   // vanilla write count for 5 and 10 times insertions
-  // for (int i = 0; i < 10; i++) {
-  //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+  for (int i = 0; i < 10; i++) {
+    std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
     
-  //   WorkloadGenerator workload_generator;
-  //   workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);    
+    WorkloadGenerator workload_generator;
+    workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);    
 
-  //   std::cout << "Workload Generated!" << std::endl;
+    std::cout << "Workload Generated!" << std::endl;
 
-  //   int only_file_meta_data = 0;
+    int only_file_meta_data = 0;
 
-  //   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-  //   {
-  //     int write_file_count = runWorkload(_env);
+    if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+    {
+      int write_file_count = runWorkload(_env);
 
-  //     std::cout << "Insert complete ... " << std::endl << std::flush; 
-  //     //DiskMetaFile::printAllEntries(only_file_meta_data);
-  //     MemoryBuffer::getCurrentBufferStatistics();
-  //     DiskMetaFile::getMetaStatistics();
+      std::cout << "Insert complete ... " << std::endl << std::flush; 
+      //DiskMetaFile::printAllEntries(only_file_meta_data);
+      MemoryBuffer::getCurrentBufferStatistics();
+      DiskMetaFile::getMetaStatistics();
 
-  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-  //     {
-  //       DiskMetaFile::printAllEntries(only_file_meta_data);
-  //       MemoryBuffer::getCurrentBufferStatistics();
-  //       DiskMetaFile::getMetaStatistics();
-  //     }
+      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+      {
+        DiskMetaFile::printAllEntries(only_file_meta_data);
+        MemoryBuffer::getCurrentBufferStatistics();
+        DiskMetaFile::getMetaStatistics();
+      }
 
-  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-  //       printEmulationOutput(_env);
-  //   }
-  //   DiskMetaFile::clearAllEntries();
-  // }
+      if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+        printEmulationOutput(_env);
+    }
+    DiskMetaFile::clearAllEntries();
+  }
   
-  // return 0;
+  return 0;
 
   // vanilla sequential evaluation for different selectivities
   // float selectivities[5] = {1, 25, 50, 75, 95};
@@ -220,56 +220,56 @@ int main(int argc, char *argvx[]) {
   // return 0;
 
   // Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
-  float selectivities[5] = {1, 25, 50, 75, 95};
-  float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
-  // loop through selectivities
-  for (int i = 0; i < 5; i++) {
-    // loop through QueryDrivenCompactionSelectivities
-    for (int l = 0; l < 4; l++) {
-      QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
-      int only_file_meta_data = 0;
-      curr_selectivity = selectivities[i];
+  // float selectivities[5] = {1, 25, 50, 75, 95};
+  // float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
+  // // loop through selectivities
+  // for (int i = 0; i < 5; i++) {
+  //   // loop through QueryDrivenCompactionSelectivities
+  //   for (int l = 0; l < 4; l++) {
+  //     QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
+  //     int only_file_meta_data = 0;
+  //     curr_selectivity = selectivities[i];
 
-      for (int j = 0; j < 10; j++) {
-        insert_time = j + 1;
-        std::cerr << "Issuing inserts ... " << std::endl << std::flush;
+  //     for (int j = 0; j < 10; j++) {
+  //       insert_time = j + 1;
+  //       std::cerr << "Issuing inserts ... " << std::endl << std::flush;
 
-        WorkloadGenerator workload_generator;
-        workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);
+  //       WorkloadGenerator workload_generator;
+  //       workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);
 
-        std::cout << "Workload Generated!" << std::endl;
+  //       std::cout << "Workload Generated!" << std::endl;
 
-        if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-        {
-          int s = runWorkload(_env);
-          std::cout << "Insert complete ... " << std::endl << std::flush;
-          //DiskMetaFile::printAllEntries(only_file_meta_data);
-          MemoryBuffer::getCurrentBufferStatistics();
-          DiskMetaFile::getMetaStatistics();
+  //       if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+  //       {
+  //         int s = runWorkload(_env);
+  //         std::cout << "Insert complete ... " << std::endl << std::flush;
+  //         //DiskMetaFile::printAllEntries(only_file_meta_data);
+  //         MemoryBuffer::getCurrentBufferStatistics();
+  //         DiskMetaFile::getMetaStatistics();
 
-          if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-          {
-            DiskMetaFile::printAllEntries(only_file_meta_data);
-            MemoryBuffer::getCurrentBufferStatistics();
-            DiskMetaFile::getMetaStatistics();
-          }
+  //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //         {
+  //           DiskMetaFile::printAllEntries(only_file_meta_data);
+  //           MemoryBuffer::getCurrentBufferStatistics();
+  //           DiskMetaFile::getMetaStatistics();
+  //         }
 
-          // apply consecutive range_query_compaction_experiment 
-          for (int k = 0; k < 50; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
+  //         // apply consecutive range_query_compaction_experiment 
+  //         for (int k = 0; k < 50; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
 
-          // apply consecutive point_query_experiment  
-          for (int k = 0; k < 50; k++) Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[l], insert_time);
+  //         // apply consecutive point_query_experiment  
+  //         for (int k = 0; k < 50; k++) Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[l], insert_time);
 
-          if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-            printEmulationOutput(_env);
-        }
-      }
+  //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //           printEmulationOutput(_env);
+  //       }
+  //     }
 
-      DiskMetaFile::clearAllEntries();
-    }
-  }
+  //     DiskMetaFile::clearAllEntries();
+  //   }
+  // }
 
-  return 0;
+  // return 0;
 
   // if (_env->num_inserts > 0) 
   // {
