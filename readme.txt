@@ -40,6 +40,15 @@ L = 10000 [count of short range queries]
 ------------------------------------------------------
 Range Query Driven Compaction
 
+Implementation:
+Query::rangeQuery: conduct range query and invoke query driven compaction given a range
+Utility::QueryDrivenCompaction: conduct query driven compaction given the range query result
+Utility::sortMergeRepartition: conduct sort merge and repartition for middle levels during query driven compaction
+
+Utility::sortAndWrite: conduct sort merge and compaction. It invokes Utility::sortMerge and Utility::compactAndFlush
+Utility::sortMerge: conduct sort merge
+Utility::compactAndFlush: conduct compaction and write SST files back to a level
+
 ./emu_runner -i 100000 -P 20 -B 2 -E 1024 -T 5 -h 1 -c 0 -D 1000 -S 10 -F 10000
 
 The insertions are bounded by 100k, and the insert times and experiments are adjusted in int main() of emu_runner accordingly. 
