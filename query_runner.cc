@@ -222,7 +222,7 @@ void Query::range_query_experiment(float selectivity)
 
   fstream fout2;
 
-  fout2.open("no_compaction_nonsequential.csv", ios::out | ios::app);
+  fout2.open("no_compaction_sequential.csv", ios::out | ios::app);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
     fout2 << "SRQ Count" << ", " << "Selectivity" << "," << "Range Start" << "," << "Range End" << "," << "Occurrences" << "\n";
@@ -269,16 +269,25 @@ void Query::sec_range_query_experiment()
   fout3.close();
 }
 
-void Query::point_query_experiment()
+void Query::point_query_experiment(float selectivity, double QueryDrivenCompactionSelectivity, int insert_time)
 {
   EmuEnv* _env = EmuEnv::getInstance();
-  int point_query_iteration1 = 100000;
-  fstream fout4;
-  fout4.open("out_point.csv", ios::out | ios::app);
+  fstream fout2;
 
-  Query::pointQueryRunner(point_query_iteration1);
-  fout4 << _env->delete_tile_size_in_pages << "," << point_query_iteration1 << "," << Query::sum_page_id << "," << Query::sum_page_id/(Query::found_count * 1.0) << "," << Query::found_count << "," << Query::not_found_count << endl;
-  fout4.close();
+  fout2.open("pq_compaction_non_sequential.csv", ios::out | ios::app);
+  bool is_empty = (fout2.tellp() == 0);
+  if (is_empty) {
+    fout2 << "Selectivity, QueryDrivenCompactionSelectivity, insert time, read_file_count" << "\n";
+  }
+
+  for (int i = 0; i < 500; i++) {
+    unsigned long long randomKey = rand() %  WorkloadGenerator::KEY_DOMAIN_SIZE;
+    //std::cout << "Generated Random Key" << randomKey << std::endl;
+    int read_file_count = Query::pointQuery(randomKey);
+    fout2 << selectivity << "," << QueryDrivenCompactionSelectivity << "," << insert_time << "," << read_file_count << "\n";
+  }
+  
+  fout2.close();
 
 }
 

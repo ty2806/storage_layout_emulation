@@ -42,10 +42,11 @@ public:
 
     static void range_query_compaction_experiment(float selectivity, string file, int insertion, double QueryDrivenCompactionSelectivity);
 
+
     static void range_query_experiment(float selectivity);
     static void sec_range_query_experiment();
     static void delete_query_experiment();
-    static void point_query_experiment();
+    static void point_query_experiment(float selectivity, double QueryDrivenCompactionSelectivity, int insert_time);
     static void new_point_query_experiment();
 
 };

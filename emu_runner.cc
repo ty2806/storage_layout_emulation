@@ -41,6 +41,7 @@ int parse_arguments2(int argc, char *argvx[], EmuEnv* _env);
 void printEmulationOutput(EmuEnv* _env);
 void calculateDeleteTileSize(EmuEnv* _env);
 float curr_selectivity;
+float QueryDrivenCompactionSelectivity;
 int insert_time;
 
 //int run_workload(read, pread, rread, write, update, delete, skew, others);
@@ -96,48 +97,86 @@ int main(int argc, char *argvx[]) {
   // fout3.close();
   // fout4.close();
 
-  // vanilla sequential evaluation:
-  // std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
-  
-  // WorkloadGenerator workload_generator;
-  // workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+  // vanilla write count
+  // for (int i = 0; i < 10; i++) {
+  //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+    
+  //   WorkloadGenerator workload_generator;
+  //   workload_generator.generateWorkload((long)_env->num_inserts / 10, (long)_env->entry_size, _env->correlation);    
 
-  // std::cout << "Workload Generated!" << std::endl;
+  //   std::cout << "Workload Generated!" << std::endl;
 
-  // int only_file_meta_data = 0;
+  //   int only_file_meta_data = 0;
 
-  // if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
-  // {
-  //   int write_file_count = runWorkload(_env);
-
-
-  //   std::cout << "Insert complete ... " << std::endl << std::flush; 
-  //   //DiskMetaFile::printAllEntries(only_file_meta_data);
-  //   MemoryBuffer::getCurrentBufferStatistics();
-  //   DiskMetaFile::getMetaStatistics();
-
-  //   if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
   //   {
-  //     DiskMetaFile::printAllEntries(only_file_meta_data);
+  //     int write_file_count = runWorkload(_env);
+
+  //     std::cout << "Insert complete ... " << std::endl << std::flush; 
+  //     //DiskMetaFile::printAllEntries(only_file_meta_data);
   //     MemoryBuffer::getCurrentBufferStatistics();
   //     DiskMetaFile::getMetaStatistics();
-  //   }
-    
-  //    Query::range_query_experiment();
-  
 
-  //   if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
-  //     printEmulationOutput(_env);
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //     {
+  //       DiskMetaFile::printAllEntries(only_file_meta_data);
+  //       MemoryBuffer::getCurrentBufferStatistics();
+  //       DiskMetaFile::getMetaStatistics();
+  //     }
+
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //       printEmulationOutput(_env);
+  //   }
+  //   DiskMetaFile::clearAllEntries();
   // }
-  // DiskMetaFile::clearAllEntries();
+  
+  // return 0;
+
+  // vanilla sequential evaluation:
+  // float selectivities[5] = {1, 25, 50, 75, 95};
+  // for (int i = 0; i < 5; i++) {
+  //   std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
+    
+  //   WorkloadGenerator workload_generator;
+  //   workload_generator.generateWorkload((long)_env->num_inserts, (long)_env->entry_size, _env->correlation);    
+
+  //   std::cout << "Workload Generated!" << std::endl;
+
+  //   int only_file_meta_data = 0;
+
+  //   if (_env->delete_tile_size_in_pages > 0 && _env->lethe_new == 0)
+  //   {
+  //     int write_file_count = runWorkload(_env);
+
+  //     std::cout << "Insert complete ... " << std::endl << std::flush; 
+  //     //DiskMetaFile::printAllEntries(only_file_meta_data);
+  //     MemoryBuffer::getCurrentBufferStatistics();
+  //     DiskMetaFile::getMetaStatistics();
+
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //     {
+  //       DiskMetaFile::printAllEntries(only_file_meta_data);
+  //       MemoryBuffer::getCurrentBufferStatistics();
+  //       DiskMetaFile::getMetaStatistics();
+  //     }
+
+  //     for (int j = 0; j < 500; j++) {
+  //       Query::range_query_experiment(selectivities[i]);
+  //     }
+      
+  //     if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
+  //       printEmulationOutput(_env);
+  //   }
+  //   DiskMetaFile::clearAllEntries();
+  // }
   
   // return 0;
 
   // Sequential Evaluation  
   // float selectivities[5] = {1, 25, 50, 75, 95};
-  // float QueryDrivenCompactionSelectivities[3] = {0.25, 0.5, 0.75};
+  // float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
   // for (int i = 0; i < 5; i++) {
-  //   for (int k = 0; k < 3; k++) {
+  //   for (int k = 0; k < 4; k++) {
   //       float QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[k];
   //       std::cerr << "Issuing inserts ... " << std::endl << std::flush; 
   //       WorkloadGenerator workload_generator;
@@ -165,6 +204,7 @@ int main(int argc, char *argvx[]) {
   //         for (int j = 0; j < 500; j++) {
   //           Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_sequential.csv", 1, QueryDrivenCompactionSelectivity);
   //         }
+  //         Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[k]);
 
   //         if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
   //           printEmulationOutput(_env);
@@ -178,14 +218,14 @@ int main(int argc, char *argvx[]) {
 
   // Non Sequential
   float selectivities[5] = {1, 25, 50, 75, 95};
-  float QueryDrivenCompactionSelectivities[3] = {0.25, 0.5, 0.75};
+  float QueryDrivenCompactionSelectivities[4] = {0.25, 0.5, 0.75, 1};
   for (int i = 0; i < 5; i++) {
-    for (int l = 0; l < 3; l++) {
-      float QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
+    for (int l = 0; l < 4; l++) {
+      QueryDrivenCompactionSelectivity = QueryDrivenCompactionSelectivities[l];
       int only_file_meta_data = 0;
       curr_selectivity = selectivities[i];
 
-      for (int j = 0; j < 5; j++) {
+      for (int j = 0; j < 10; j++) {
         insert_time = j + 1;
         std::cerr << "Issuing inserts ... " << std::endl << std::flush;
 
@@ -209,7 +249,9 @@ int main(int argc, char *argvx[]) {
             DiskMetaFile::getMetaStatistics();
           }
 
-          for (int k = 0; k < 100; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
+          for (int k = 0; k < 50; k++) Query::range_query_compaction_experiment(selectivities[i], "QueryDrivenCompactionSelectivity_non_sequential_5.csv", insert_time, QueryDrivenCompactionSelectivity);
+
+          Query::point_query_experiment(selectivities[i], QueryDrivenCompactionSelectivities[l], insert_time);
 
           if (MemoryBuffer::verbosity == 1 || MemoryBuffer::verbosity == 2 || MemoryBuffer::verbosity == 3)
             printEmulationOutput(_env);
@@ -412,9 +454,9 @@ int runWorkload(EmuEnv* _env) {
   fout2.open("insert_write_file_count.csv", ios::out | ios::app);
   bool is_empty = (fout2.tellp() == 0);
   if (is_empty) {
-    fout2 << "Insert Num, Curr Selectivity, Write File Count, Insert Time" << "\n";
+    fout2 << "Insert Num, Curr Selectivity, QueryDrivenCompactionSelectivity, Write File Count, Insert Time" << "\n";
   }
-  fout2 << _env->num_inserts << "," << curr_selectivity << "," << write_file_count << "," << insert_time << endl;
+  fout2 << _env->num_inserts / 10 << "," << curr_selectivity << ","  << QueryDrivenCompactionSelectivity << "," << write_file_count << "," << insert_time << endl;
 
   return write_file_count;
 }
