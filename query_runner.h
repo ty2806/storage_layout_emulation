@@ -14,6 +14,13 @@ class Query
 private:
   
 public:
+    static int delete_key;
+    static int range_start_key;
+    static int range_end_key;
+    static int sec_range_start_key;
+    static int sec_range_end_key;
+    static int iterations_point_query;
+
     static int complete_delete_count;
     static int not_possible_delete_count;
     static int partial_delete_count;

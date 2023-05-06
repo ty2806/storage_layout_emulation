@@ -26,6 +26,16 @@ using namespace std;
 using namespace tree_builder;
 using namespace workload_exec;
 
+/*
+ * DECLARATIONS
+*/
+int Query::delete_key;
+int Query::range_start_key;
+int Query::range_end_key;
+int Query::sec_range_start_key;
+int Query::sec_range_end_key;
+int Query::iterations_point_query;
+
 //long inserts(EmuEnv* _env);
 int parse_arguments2(int argc, char *argvx[], EmuEnv* _env);
 void printEmulationOutput(EmuEnv* _env);
