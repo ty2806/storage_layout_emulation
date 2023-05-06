@@ -52,8 +52,8 @@ Utility::compactAndFlush: conduct compaction and write SST files back to a level
 ./emu_runner -i 100000 -P 20 -B 2 -E 1024 -T 5 -h 1 -c 0 -D 1000 -S 10 -F 10000
 
 The insertions are bounded by 100k, and the insert times and experiments are adjusted in int main() of emu_runner accordingly. 
-- vanilla write count for 5 and 10 times insertions
-- vanilla sequential evaluation for different selectivities
-- Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
-- Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities
+- vanilla write count for 5 or 10 times insertions (line 101 - 134)
+- vanilla sequential evaluation for different selectivities (line 137 - 175)
+- Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities (line 178 - 221)
+- Non Sequential Evaluation with Compaction for different selectivities and QueryDrivenCompactionSelectivities (line 224 - 273)
 
